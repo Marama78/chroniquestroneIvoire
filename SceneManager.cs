@@ -1,6 +1,6 @@
-﻿using _TheShelter.Scene;
+﻿using CTI_RPG.Scene;
 
-namespace TheShelter
+namespace CTI_RPG
 {
     public class SceneManager
     {
@@ -29,7 +29,7 @@ namespace TheShelter
 
             switch (scenetoload)
             {
-                case scene.devmode: currentScene = new Refuge(main); break;
+                case scene.devmode: currentScene = new SplashScreen(main); break;
 
                 case scene.splashscreen: currentScene = new SplashScreen(main); break;
                 case scene.start: currentScene = new Start(main); break;
@@ -37,7 +37,7 @@ namespace TheShelter
                 case scene.newgame: currentScene = new NewGame(main); break;
                 case scene.loose: currentScene = new Loose(main); break;
 
-                case scene.combatmode: currentScene = new CombatMode(main); break;
+                case scene.combatmode: currentScene = new RPG_systemCombat(main); break; ///CombatMode(main); break;
 
                 case scene.refuge:  currentScene=new Refuge(main); break;
                 case scene.quit: break;

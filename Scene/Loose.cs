@@ -7,9 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheShelter;
+using CTI_RPG;
 
-namespace _TheShelter.Scene
+namespace CTI_RPG.Scene
 {
     public class Loose : ModelScene
     {

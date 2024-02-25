@@ -5,12 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Schema;
 
-namespace _TheShelter.RefugeSystem
+namespace CTI_RPG.RefugeSystem
 {
     public static class RefugeMainRules
     {
-
-
         public static string GetName(int typeOfBuilding)
         {
             //-- prix des bâtiments
@@ -30,10 +28,6 @@ namespace _TheShelter.RefugeSystem
                 default: return string.Empty;
             }
         }
-
-
-
-
         public static int GetPrice(int typeOfBuilding)
         {
             //-- prix des bâtiments

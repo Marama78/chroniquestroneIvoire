@@ -1,4 +1,5 @@
-﻿using DinguEngine.Camera;
+﻿using DinguEngine;
+using DinguEngine.Camera;
 using DinguEngine.Shared;
 using DinguEngine.UI;
 using DinguEngine.UI.TE_Window;
@@ -11,9 +12,9 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using System.Collections.Generic;
 using System.Threading;
-using TheShelter;
+using CTI_RPG;
 
-namespace _TheShelter.Scene
+namespace CTI_RPG.Scene
 {
     public class Start : ModelScene
     {
@@ -21,7 +22,7 @@ namespace _TheShelter.Scene
         Texture2D panel;
         Texture2D cursor;
         Texture2D buttonCMD;
-
+        Texture2D falling;
 
         SoundEffect snd_drawUI;
         SoundEffect snd_mouseHover;
@@ -71,8 +72,8 @@ namespace _TheShelter.Scene
 
             for (int i = 0; i < 4; i++)
             {
-                int posX = -76 + panelCMDOffset.x;
-                int posY = -26 + panelCMDOffset.y + i * 18;
+                int posX = -66 + panelCMDOffset.x;
+                int posY = -26 + panelCMDOffset.y + i * 18-22;
 
                 Rectangle temp = new Rectangle(posX, posY, 100, 16);
                 DrawRect alta = new DrawRect(temp, 32);
@@ -80,8 +81,36 @@ namespace _TheShelter.Scene
                 commands[i].drawrect.frame = new Rectangle(0, 0, 100, 28);
             }
         }
+
+        float chronofallinganim;
+        float chronofallinganim2;
+        float chronofallinganim3;
+        float chronofallinganim4;
         public override void Load(ref ContentManager _content)
         {
+
+            //-- for battle scene --
+            List<actorType> friends = new List<actorType>()
+            {
+                actorType.princess,
+                actorType.soldier,
+                actorType.archer,
+            };
+            List<actorType> ennemies = new List<actorType>()
+            {
+                actorType.kingGolem,
+                actorType.zombie,
+                actorType.zombie,
+                actorType.zombie,
+            };
+
+            TE_Manager.friends.Clear();
+            TE_Manager.friends = friends;
+            TE_Manager.ennemies.Clear();
+            TE_Manager.ennemies = ennemies;
+
+
+
             panelCMDOffset = new int2(80, 30);
             cameraoffset = new int2(-120, -80);
 
@@ -98,9 +127,10 @@ namespace _TheShelter.Scene
 
             musicEffect = _content.Load<Song>("Songs\\OST 5 - Wrath of the Norns");
             mainscreen = _content.Load<Texture2D>("Tilesets\\mainscreen");
+            falling = _content.Load<Texture2D>("system\\falling_l");
             panel = _content.Load<Texture2D>("statusBar");
             cursor = _content.Load<Texture2D>("system\\cursor");
-            buttonCMD = _content.Load<Texture2D>("system\\menu");
+            buttonCMD = _content.Load<Texture2D>("statusBar");
             MediaPlayer.IsRepeating = true;
             MediaPlayer.Play(musicEffect);
 
@@ -111,6 +141,15 @@ namespace _TheShelter.Scene
 
             SetCommands();
 
+            positions = new List<Rectangle>();
+            int rand = Randomizer.GiveRandomInt(4, 6);
+            for (int i = 0; i < rand; i++)
+            {
+                int size = Randomizer.GiveRandomInt(6, 10);
+                Rectangle temp = ToOffset(new Rectangle(Randomizer.GiveRandomInt(10, 220)
+                    , Randomizer.GiveRandomInt(-10, 0), size, size));
+                positions.Add(temp);
+            }
             base.Load(ref _content);
 
 
@@ -219,7 +258,7 @@ namespace _TheShelter.Scene
                         switch(i)
                         {
                                 case 0: isLOCKED = true; nextscene = scene.newgame; break;
-                                case 1: isLOCKED = true; nextscene = scene.refuge; break;  
+                                case 1: isLOCKED = true; nextscene = scene.combatmode; break;  
                                 case 2: isLOCKED = true; nextscene = scene.credits; break;
                                 case 3: isLOCKED = true; nextscene = scene.quit; break;
                         }
@@ -238,8 +277,53 @@ namespace _TheShelter.Scene
             }
         }
 
+        bool autoShow = false;
+        float chronoshow = 0.0f;
+        Rectangle frame1;
+        List<Rectangle> positions;
+
+        float chronoFalling_rate = 0;
+        int limit = 4;
         public override void Update()
         {
+           
+            for (int i = 0; i < positions.Count; i++)
+            {
+
+           
+                positions[i] = new Rectangle(positions[i].X+ Randomizer.GiveRandomInt(1, 3)-2,
+                    positions[i].Y+ Randomizer.GiveRandomInt(1, 3)-1, positions[i].Width, positions[i].Height);
+               
+            }
+           // positions.ForEach(x=>x=new Rectangle(x.X + Randomizer.GiveRandomInt(-3, 5), x.Y + 5, x.Width, x.Height));
+            positions.RemoveAll(x => x.Y > 260);
+            chronofallinganim += 0.15f;
+            if (chronofallinganim>13)
+            {
+                
+
+                chronofallinganim = 0.0f;
+            }
+            frame1 = new Rectangle((int)chronofallinganim * 32, 0, 32, 32);
+
+            chronoFalling_rate += 0.15f;
+            if(chronoFalling_rate>=limit)
+            {
+                chronoFalling_rate = 0;
+
+                int rand = Randomizer.GiveRandomInt(4, 6);
+                for (int i = 0; i < rand; i++)
+                {
+                    int size = Randomizer.GiveRandomInt(6, 10);
+                    Rectangle temp = ToOffset(new Rectangle(Randomizer.GiveRandomInt(10, 220)
+                        , Randomizer.GiveRandomInt(-10, 0), size, size));
+                    positions.Add(temp);
+
+                }
+
+                limit = Randomizer.GiveRandomInt(3, 6);
+            }
+
             if (isLOCKED)
             {
                 ExitScene();
@@ -257,10 +341,21 @@ namespace _TheShelter.Scene
             Point mouseposition = mouseState.Position;
             cursorPos = uicamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
             var click = mouseState.LeftButton == ButtonState.Pressed;
-
-            if(click && !isFocusOnCommand) {
+            
+            
+            if(!isFocusOnCommand)
+            {
+                chronoshow += 0.015f;
+                if (chronoshow > 2.0f)
+                {
+                    autoShow = true;
+                }
+            }
+           
+            if((click && !isFocusOnCommand)||autoShow) {
                 PlayAudio(snd_drawUI, 0.5f);
                 isFocusOnCommand = true; 
+                autoShow = false;
             }
 
             ReadCommands(ref cursorPos, ref click);
@@ -270,7 +365,26 @@ namespace _TheShelter.Scene
 
         public override void Draw(ref SpriteBatch _sp)
         {
-            _sp.Draw(mainscreen, new Rectangle(cameraoffset.x, cameraoffset.y, 240,160), Color.White*alpha);
+            _sp.Draw(mainscreen, new Rectangle(cameraoffset.x, cameraoffset.y, 240,160), new Rectangle(0,0,240,160),
+                Color.White*alpha,
+                0, Vector2.Zero, SpriteEffects.None, 0.7f);
+
+            for (int i = 0; i < positions.Count; i++)
+            {
+                _sp.Draw(falling, positions[i], frame1, Color.White);
+            }
+
+
+            _sp.Draw(buttonCMD,
+               new Rectangle(commands[3].drawrect.position.X - 130, commands[3].drawrect.position.Y + 8 + 20, 180, 14),
+               new Rectangle(0, 0, 16, 16),
+               Color.Black,
+               0, Vector2.Zero, SpriteEffects.None, 0.4f);
+            _sp.DrawString(cutsceneFont, "F1,F2,F3,F4 - change screen resolution",
+               new Vector2(commands[3].drawrect.position.X - 126, commands[3].drawrect.position.Y + 30), Color.Orange,
+              0, Vector2.Zero, 0.8f, SpriteEffects.None, 0.1f);
+
+
             base.Draw(ref _sp);
         }
 
@@ -278,16 +392,23 @@ namespace _TheShelter.Scene
         {
 
             if(!isFocusOnCommand) { return; }
-            for (int i = 0; i<commandPanel.Length; i++)
-            {
-                _spUI.Draw(panel
-                    , commandPanel[i].position
-                    , commandPanel[i].frame
-                    ,Color.White* uiAlpha* uiAlpha_CMD,
-                    0.0f,Vector2.Zero,SpriteEffects.None,0.8f
-                    );
-            }
+            /* for (int i = 0; i<commandPanel.Length; i++)
+             {
+                 _spUI.Draw(panel
+                     , commandPanel[i].position
+                     , commandPanel[i].frame
+                     ,Color.White* uiAlpha* uiAlpha_CMD,
+                     0.0f,Vector2.Zero,SpriteEffects.None,0.8f
+                     );
+             }*/
 
+
+            _spUI.Draw(buttonCMD
+                   ,new Rectangle(commands[0].drawrect.position.X-4, commands[0].drawrect.position.Y-4,
+                   commands[0].drawrect.position.Width + 8, commands[0].drawrect.position.Height*4 + 20)
+                   , new Rectangle(0,0,16,16)
+                   , Color.Cyan * uiAlpha_CMD,
+                    0.0f, Vector2.Zero, SpriteEffects.None, 0.4f);
 
             for (int i = 0; i < commands.Length; i++)
             {
@@ -305,6 +426,12 @@ namespace _TheShelter.Scene
                 _spUI.DrawString(cutsceneFont, commandNames[i], posText,Color.Black);
 
             }
+
+            _spUI.DrawString(cutsceneFont, "version 1.0.0", 
+                new Vector2(commands[3].drawrect.position.X + 24, commands[3].drawrect.position.Y + 15), Color.Black,
+               0,Vector2.Zero,0.8f,SpriteEffects.None,0.1f );
+
+           
 
             if (cursor == null) return;
             Rectangle mousecursorPosition = new Rectangle(cursorPos.X, cursorPos.Y, 20, 20);

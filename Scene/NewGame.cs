@@ -5,12 +5,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using System.Collections.Generic;
 using System.Linq;
-using TheShelter;
+using CTI_RPG;
 
-namespace _TheShelter.Scene
+namespace CTI_RPG.Scene
 {
     public class NewGame : ModelScene
     {
@@ -126,33 +127,7 @@ namespace _TheShelter.Scene
 
         public override void Load(ref ContentManager _content)
         {
-            //-- for battle scene --
-            List<actorType> friends = new List<actorType>()
-            {
-                actorType.princess,
-                actorType.soldier, 
-                actorType.archer,
-                actorType.mage,
-                actorType.priest,
-            };
-            List<actorType> ennemies = new List<actorType>()
-            {
-                actorType.kingGolem,
-                actorType.zombie,
-                actorType.zombie,
-                actorType.zombie,
-                actorType.zombie,
-                actorType.zombie,
-                actorType.zombie,
-                actorType.zombie
-            };
-
-            TE_Manager.friends.Clear();
-            TE_Manager.friends = friends;
-            TE_Manager.ennemies.Clear();
-            TE_Manager.ennemies = ennemies;
-
-
+           
 
 
 
@@ -184,10 +159,15 @@ namespace _TheShelter.Scene
         List<actorType> friends;
         List<actorType> ennemies;
 
+        int mousetick = 0;
+
         public override void Update()
         {
-            timer += speed;
-
+            MouseState mousestate = Mouse.GetState();
+            var clicked = mousestate.LeftButton == ButtonState.Pressed;
+           
+                timer += speed;
+            
             if(cutsceneIsOver )
             {
                 if(timer >=4.0f)
@@ -226,8 +206,6 @@ namespace _TheShelter.Scene
 
                     outputTExt1 = string.Empty;
                     outputTExt2 = string.Empty;
-
-
 
                     outputTExt1 += _textCUTSCENE_1[currentIteration][iterationTEXT1];
                     
@@ -294,8 +272,15 @@ namespace _TheShelter.Scene
                 outputTExt2 = _textCUTSCENE_1_line2[currentIteration];
             }
 
+            if (clicked && mousetick == 0)
+            {
+                mousetick++;
+                iterationTEXT1 = _textCUTSCENE_1.Count - 1;
+                iterationTEXT2 = _textCUTSCENE_1_line2.Count - 1;
 
-            //  outputTExt2 = string.Empty;//+= _textCUTSCENE_1_line2[iterationTEXT2];
+                outputTExt1 = _textCUTSCENE_1[currentIteration];
+                outputTExt2 = _textCUTSCENE_1_line2[currentIteration];
+            }
 
             base.Update();
         }

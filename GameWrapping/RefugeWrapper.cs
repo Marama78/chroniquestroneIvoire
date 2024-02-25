@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace _TheShelter.GameWrapping
+namespace CTI_RPG.GameWrapping
 {
 
     public enum FightMode

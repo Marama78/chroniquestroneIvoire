@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 
-namespace TheShelter
+namespace CTI_RPG
 {
     public abstract class ModelScene
     {
@@ -18,7 +18,7 @@ namespace TheShelter
         protected SpriteFont mainFont, cutsceneFont, UI_Fonts;
        // protected int2 cameraOffset = new int2(-120, -80);
         protected int2 cameraOffset = new int2(-120, -80);
-
+        protected Color[] myColors;
         protected Rectangle ToOffset(Rectangle value)
         {
             return new Rectangle(value.X + cameraOffset.x, value.Y + cameraOffset.y, value.Width, value.Height); ;
@@ -42,6 +42,26 @@ namespace TheShelter
         protected ModelScene(MainClass _mainclass)
         {
             main = _mainclass;
+
+            //-- setup From Dawnbringer palette
+            myColors = new Color[]
+            {
+            new Color(34,32,52),
+            new Color(69,40,60),
+            new Color(102,57,49),
+            new Color(143,86,59),
+            new Color(223,113,38),
+            new Color(217,160,102),
+            new Color(238,195,154),
+            new Color(63,63,116),
+            new Color(48,96,130),
+            new Color(153,229,180),
+            new Color(55,18,110),
+
+
+            };
+
+
         }
 
         public virtual void Load(ref ContentManager _content)

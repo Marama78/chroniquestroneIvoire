@@ -1,5 +1,5 @@
-﻿using _TheShelter.GameWrapping;
-using _TheShelter.RefugeSystem;
+﻿using CTI_RPG.GameWrapping;
+using CTI_RPG.RefugeSystem;
 using DinguEngine;
 using DinguEngine.Camera;
 using DinguEngine.Refuge;
@@ -15,9 +15,9 @@ using Microsoft.Xna.Framework.Media;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using TheShelter;
+using CTI_RPG;
 
-namespace _TheShelter.Scene
+namespace CTI_RPG.Scene
 {
 
     public enum ActionTile
@@ -51,6 +51,7 @@ namespace _TheShelter.Scene
         Rectangle[] cursors;
         Point cursorPos;
         Point UIcursorPos;
+        Point cursor_explore;
         //-end- curseur
 
         //-- taille de la map (-> clone dans TE_Manager)
@@ -137,10 +138,108 @@ namespace _TheShelter.Scene
         string newBankAccount = string.Empty;
         bool displayNewBankAccount = false;
         int ticker = 0;
+
+        bool IsExploreMapOnScreen = false;
+        int maxpopulation; 
+        int nextdaystate = 0;
+        float chrononextday = 0.0f;
+        bool StartANewDay = false;
+        bool startdayfromwrapper = false;
+        int totalbuilddortoir = 1, totalbuildminecharbon,
+            totalbuildbiere, totalbuildfasfood, totalbuildmagic,
+            totalbuildforge, totalbuildfiltreeau, totalbuildstockage; 
+        float alphadays = 0.0f;
+        float alpha_maincamera = 1.0f;
+        int actorCounter = 0;  
+        string buildingPrice = string.Empty;
+        string buildingName = string.Empty;
+
+        TE_Button[] mapEmplacements_cities;
+        TE_Button[] mapEmplacements_Bosses;
+        TE_Button[] mapEmplacements_specials;
+        TE_Button[] mapEmplacements_hidden;
+        TE_Button home;
+
+        int2 offset_buildingFX = new int2(2, 2);
+
         public Refuge(MainClass _mainclass) : base(_mainclass)
         {
 
         }
+
+        #region <Generate Map Interface>
+
+        public void SetupMapExploration_Cities()
+        {
+            int2[] positions = new int2[]
+                {
+                    new int2(12,434),
+                    new int2(118,392),
+                    new int2(164,435),
+                    new int2(107,315),
+                    new int2(43,342),
+                    new int2(191,312),
+                    new int2(198,369),
+                    new int2(269,411),
+                    new int2(258,332),
+                    new int2(295,314),
+                    new int2(368,249),
+                    new int2(276,265),
+                    new int2(350,302),
+                    new int2(345,344),
+                    new int2(332,386),
+                    new int2(374,414),
+                    new int2(413,366),
+                    new int2(510,423),
+                    new int2(503,388),
+                    new int2(458,337),
+                    new int2(426,297),
+                    new int2(552,366),
+                    new int2(579,395),
+                    new int2(589,441),
+                    new int2(567,315),
+                    new int2(601,255),
+                    new int2(486,252),
+                    new int2(541,226),
+                    new int2(525,292),
+                    new int2(558,268),
+                    new int2(606,295),
+                    new int2(513,174),
+                    new int2(576,172),
+                    new int2(578,115),
+                };
+
+            if (positions != null) { mapEmplacements_cities = new TE_Button[positions.Length]; }
+
+            for (int i = 0; i < positions.Length; i++)
+            {
+                Rectangle position = ToOffset(new Rectangle(
+                    (int)positions[i].x / 2,
+                    (int)positions[i].y / 2,
+                    14, 14));
+                DrawRect temp = new DrawRect(position, 16);
+                mapEmplacements_cities[i]=new TE_Button(temp, new int2(0, 0),16);
+            }
+           /* Rectangle[] emplacements = new Rectangle[]
+            {
+                ToOffset(new Rectangle(6,217,15,15)),
+                ToOffset(new Rectangle(118/2,392/2,28/2,28/2)),
+            };
+
+            DrawRect[] emplacements_dr = new DrawRect[]
+            {
+                new DrawRect(emplacements[0],16),
+                new DrawRect(emplacements[1],16),
+            };
+
+            mapEmplacements_cities = new TE_Button[]
+            {
+                new TE_Button(emplacements_dr[0],new int2(0,0),16),
+                new TE_Button(emplacements_dr[1],new int2(0,0),16),
+            };*/
+        }
+
+        #endregion <Generate Map Interface>
 
 
         #region <unit generator>
@@ -163,7 +262,7 @@ namespace _TheShelter.Scene
         #endregion </unit generator>
 
         #region <UX - UI Visual loaders>
-        
+
         private void SetExplorationMode()
         {
             bgExplore_mode = ToOffset(new Rectangle(8, 22, 160, 100));
@@ -243,15 +342,15 @@ namespace _TheShelter.Scene
             Rectangle build2 = ToOffset(new Rectangle(margx + tilesize + space, margy, tilesize, tilesize));
             Rectangle build3 = ToOffset(new Rectangle(margx + tilesize * 2 + space * 2, margy, tilesize, tilesize));
 
-            Rectangle build4 = ToOffset(new Rectangle(margx, margy+height_margin, tilesize, tilesize));
+            Rectangle build4 = ToOffset(new Rectangle(margx, margy + height_margin, tilesize, tilesize));
             Rectangle build5 = ToOffset(new Rectangle(margx + space + tilesize, margy + height_margin, tilesize, tilesize));
             Rectangle build6 = ToOffset(new Rectangle(margx + space * 2 + tilesize * 2, margy + height_margin, tilesize, tilesize));
 
-            Rectangle build7 = ToOffset(new Rectangle(margx, margy + height_margin *2, tilesize, tilesize));
-            Rectangle build8 = ToOffset(new Rectangle(margx + space + tilesize, margy + height_margin *2, tilesize, tilesize));
-            Rectangle build9 = ToOffset(new Rectangle(margx + space * 2 + tilesize*2, margy + height_margin *2, tilesize, tilesize));
-            
-            Rectangle build10 = ToOffset(new Rectangle(margx + space * 2 + tilesize*3+8, margy, 24, 24));
+            Rectangle build7 = ToOffset(new Rectangle(margx, margy + height_margin * 2, tilesize, tilesize));
+            Rectangle build8 = ToOffset(new Rectangle(margx + space + tilesize, margy + height_margin * 2, tilesize, tilesize));
+            Rectangle build9 = ToOffset(new Rectangle(margx + space * 2 + tilesize * 2, margy + height_margin * 2, tilesize, tilesize));
+
+            Rectangle build10 = ToOffset(new Rectangle(margx + space * 2 + tilesize * 3 + 8, margy, 24, 24));
 
             DrawRect dr1 = new DrawRect(build1, 64);
             DrawRect dr2 = new DrawRect(build2, 64);
@@ -316,7 +415,7 @@ namespace _TheShelter.Scene
             btn_exploration = new TE_Button(rectex, new int2(0, 0), 16);
             btn_exploration.drawrect.frame = new Rectangle(6 * 24, 0, 24, 24);
 
-         
+
             //-- bouton pour quitter jeu
             Rectangle tempnt = ToOffset(new Rectangle(198, btn_cmdposY, btn_cmdsize, btn_cmdsize));
             DrawRect rectnt = new DrawRect(tempnt, 16);
@@ -333,7 +432,7 @@ namespace _TheShelter.Scene
             int btn_cmdsize = 16;
             int btn_cmdposY = 130;
 
-            bg_btn_dayNightPanel = ToOffset(new Rectangle(22 + btn_cmdsize * 2, btn_cmdposY - 2, btn_cmdsize * 5+ 12, btn_cmdsize + 4));
+            bg_btn_dayNightPanel = ToOffset(new Rectangle(22 + btn_cmdsize * 2, btn_cmdposY - 2, btn_cmdsize * 5 + 12, btn_cmdsize + 4));
 
 
             //-- bouton pour passer le tour
@@ -415,7 +514,7 @@ namespace _TheShelter.Scene
             statusTex = _content.Load<Texture2D>("statusBar");
 
             cursor = _content.Load<Texture2D>("system\\cursor");
-           
+
 
 
             textures = new Texture2D[]
@@ -448,7 +547,7 @@ namespace _TheShelter.Scene
 
             Rectangle temp = ToOffset(new Rectangle(220, 130, 16, 16));
             DrawRect fr = new DrawRect(temp, 24);
-            btn_music = new TE_Button(fr, new int2(10, 0),24);
+            btn_music = new TE_Button(fr, new int2(10, 0), 24);
         }
 
 
@@ -469,13 +568,14 @@ namespace _TheShelter.Scene
         }
         private void PlayMusic()
         {
-               int rand = Randomizer.GiveRandomInt(0, bgsongs.Length);
-               if (rand >= 5) rand = 4;
-                MediaPlayer.Play(bgsongs[rand]);
-            
+            int rand = Randomizer.GiveRandomInt(0, bgsongs.Length);
+            if (rand >= 5) rand = 4;
+            MediaPlayer.Play(bgsongs[rand]);
+            MediaPlayer.IsRepeating = true;
+
         }
         SoundEffect[] audio;
-        private void LoadAudio(ref  ContentManager _content)
+        private void LoadAudio(ref ContentManager _content)
         {
             audio = new SoundEffect[]
             {
@@ -495,7 +595,7 @@ namespace _TheShelter.Scene
         #region <Grid Generator>
         private void GenerateMap()
         {
-           
+
 
             gridSize = gridW * gridH;
             map = new TE_Button[gridSize];
@@ -514,13 +614,13 @@ namespace _TheShelter.Scene
                     column++;
                 }
 
-              
+
 
                 //-- poser les tuiles --
                 int posX = column * (tileW);
-                if(column!=0 && line>=2)
+                if (column != 0 && line >= 2)
                 {
-                    posX = column * (tileW)+tileW/2;
+                    posX = column * (tileW) + tileW / 2;
                 }
                 int posY = line * (tileH) + offsetY_UIPANEL;
                 int rectWidth = tileW;
@@ -562,7 +662,7 @@ namespace _TheShelter.Scene
                 {
                     //-- les bords à gauche et à droite
                     if (column == gridW - 1) temp.position = new Rectangle(posX, posY, tileW * 3, tileH);
-                    if (column == 0) temp.position = new Rectangle(posX, posY, tileW +tileW/2, tileH);
+                    if (column == 0) temp.position = new Rectangle(posX, posY, tileW + tileW / 2, tileH);
                     temp.SetFrame(0, 0, frameW, frameH);
 
                     map[i] = new TE_Button(temp, new int2(0, 0), frameW, frameH);
@@ -571,7 +671,7 @@ namespace _TheShelter.Scene
                 }
                 else
                 {
-                    
+
                     //-- le reste 
                     if (column == 1 || column == 4 || column == 9)
                     {
@@ -581,8 +681,8 @@ namespace _TheShelter.Scene
                         temp.SetFrame(4, 0, frameW / 2, frameH);
                         map[i] = new TE_Button(temp, new int2(4, 0), frameW / 2, frameH);
                         map[i].style = build_style.empty;
-                    
-                        if(column==4) { centralStairsID.Add(i); }
+
+                        if (column == 4) { centralStairsID.Add(i); }
                     }
                     else
                     {
@@ -606,7 +706,7 @@ namespace _TheShelter.Scene
                 if (i == 0)
                 {
                     //-- entrée du refuge --
-                    map[i].drawrect.position = new Rectangle(0, offsetY_UIPANEL, (int)(tileW * 1.5f), tileH * 2);
+                    map[i].drawrect.position = new Rectangle(0, offsetY_UIPANEL, (int)(tileW * 1.5f)- offset_buildingFX.x, ( tileH * 2)- offset_buildingFX.x);
                     map[i].drawrect.textureID = 0;
                     map[i].drawrect.SetFrame(0, 0, 200, frameH * 2);
                     map[i].style = build_style.outside_entrance;
@@ -628,7 +728,7 @@ namespace _TheShelter.Scene
             int rectY = map[13].drawrect.position.Y;
             map[13].drawrect.textureID = 1;
             map[13].drawrect.frame = new Rectangle(0, 0, frameW * 2, frameH);
-            map[13].drawrect.position = new Rectangle(rectX, rectY, 80, tileH);
+            map[13].drawrect.position = new Rectangle(rectX, rectY, 80- offset_buildingFX.x, tileH- offset_buildingFX.x);
             map[13].style = build_style.accueil;
             map[14].style = build_style.accueil;
 
@@ -637,8 +737,8 @@ namespace _TheShelter.Scene
 
         private void GenerateCentralStairs()
         {
-              BUILD_Stairs(centralStairsID[0]);
-            BUILD_Stairs(centralStairsID[1]) ;
+            BUILD_Stairs(centralStairsID[0]);
+            BUILD_Stairs(centralStairsID[1]);
         }
         private void GenerateDwarvesMines()
         {
@@ -652,7 +752,7 @@ namespace _TheShelter.Scene
             map[minefer_mithril].style = build_style.minemitrhil;
             map[minefer_adamantium].style = build_style.mineadmantium;
 
-          
+
 
             map[minefer_ID].drawrect.textureID = 6;
             map[minefer_mithril].drawrect.textureID = 6;
@@ -661,9 +761,11 @@ namespace _TheShelter.Scene
             int width = 80;
             int height = 40;
 
-            map[minefer_ID].drawrect.frame = new Rectangle(2 * width, 0, width, height);
-            map[minefer_mithril].drawrect.frame = new Rectangle(3 * width, 0, width, height);
-            map[minefer_adamantium].drawrect.frame = new Rectangle(4 * width, 0, width, height);
+            //-- dimensions des frames
+            map[minefer_ID].drawrect.frame = new Rectangle(3 * width, 0, width, height);
+            map[minefer_mithril].drawrect.frame = new Rectangle(4 * width, 0, width, height);
+            map[minefer_adamantium].drawrect.frame = new Rectangle(5 * width, 0, width, height);
+            //-end-
 
             map[minefer_ID].drawrect.DEFAULT_COLOR = Color.White;
             map[minefer_mithril].drawrect.DEFAULT_COLOR = Color.White;
@@ -682,8 +784,8 @@ namespace _TheShelter.Scene
             totalbuilddortoir = data.totalbuilddortoir;
             totalbuildfasfood = data.totalbuildfasfood;
             totalbuildminecharbon = data.totalbuildminecharbon;
-            totalbuildmagic = data.totalbuildmagic; 
-            totalbuildforge = data.totalbuildforge; 
+            totalbuildmagic = data.totalbuildmagic;
+            totalbuildforge = data.totalbuildforge;
             totalbuildfiltreeau = data.totalbuildfiltreeau;
             totalbuildbiere = data.totalbuildbiere;
             totalbuildstockage = data.totalbuildstockage;
@@ -699,11 +801,11 @@ namespace _TheShelter.Scene
 
         public override void Load(ref ContentManager _content)
         {
-           
-            maincamera = new TE_Camera( );
-            uicamera = new TE_Camera( );
-            friendcamera = new TE_Camera( );
-            ennemycamera = new TE_Camera( );
+
+            maincamera = new TE_Camera();
+            uicamera = new TE_Camera();
+            friendcamera = new TE_Camera();
+            ennemycamera = new TE_Camera();
 
             //-- <Charger Assets Exterieurs>
             LoadTextures(ref _content);
@@ -722,7 +824,7 @@ namespace _TheShelter.Scene
             frameW = 80;
             frameH = 40;
 
-            if(RefugeWrapper.stateWrapping==0)
+            if (RefugeWrapper.stateWrapping == 0)
             {
                 //-- un refuge n'est PAS en mémoire
                 GenerateMap();
@@ -741,17 +843,17 @@ namespace _TheShelter.Scene
                 RefugeWrapper.LoadDataRefuge(ref data);
 
                 ReadDataRefuge();
-               if(ticker==0)
+                if (ticker == 0)
                 {
                     ticker++;
-                    StartANewDay =true;
+                    StartANewDay = true;
                 }
-                
+
 
                 bank += TE_Manager.bank_bonus;
                 displayNewBankAccount = true;
             }
-            
+
             //-end- </Générer la map>
 
             //-- <Générer l'interface Utilisateur>
@@ -764,14 +866,28 @@ namespace _TheShelter.Scene
 
 
             UpdateBuilderPanelButtons();
-
+            SetupMapExploration_Cities();
             base.Load(ref _content);
         }
 
         #region <Building behaviours>
 
-        private bool BUILD_Stairs(int iterationMapGrid)
+
+        private void FixPosition(ref int iterationMapGrid)
         {
+            int posX = map[iterationMapGrid].drawrect.position.X;
+            int posY = map[iterationMapGrid].drawrect.position.Y;
+            int width = map[iterationMapGrid].drawrect.position.Width;
+            int height = map[iterationMapGrid].drawrect.position.Height;
+            map[iterationMapGrid].drawrect.position = new Rectangle(posX, posY, 
+                width - offset_buildingFX.x, height - offset_buildingFX.y);
+
+        }
+
+        private bool BUILD_Stairs(int iterationMapGrid)
+        { 
+                FixPosition(ref  iterationMapGrid);
+
             map[iterationMapGrid].drawrect.textureID = 2;
             map[iterationMapGrid].drawrect.SetFrame(0, 0, frameW / 2, frameH);
             map[iterationMapGrid].style = build_style.stairs;
@@ -780,6 +896,7 @@ namespace _TheShelter.Scene
 
         private bool BUILD_FiltreEau(int iterationMapGrid)
         {
+            FixPosition(ref iterationMapGrid);
             //-rappel- frameW = 80; frameH == 40;
             map[iterationMapGrid].drawrect.textureID = 6;
             map[iterationMapGrid].drawrect.SetFrame(0, 0, frameW, frameH);
@@ -791,6 +908,7 @@ namespace _TheShelter.Scene
 
         private bool BUILD_Biere(int iterationMapGrid)
         {
+            FixPosition(ref iterationMapGrid);
             //-rappel- frameW = 80; frameH == 40;
             map[iterationMapGrid].drawrect.textureID = 6;
             map[iterationMapGrid].drawrect.SetFrame(1, 0, frameW, frameH);
@@ -827,6 +945,7 @@ namespace _TheShelter.Scene
             map[iterationMapGrid].drawrect.SetFrame(0, 0, frameW * 2, frameH);
             map[iterationMapGrid].style = build_style.dortoir;
             map[iterationMapGrid].state = buildingState.canRead;
+            FixPosition(ref iterationMapGrid);
 
             return true;
         }
@@ -859,12 +978,20 @@ namespace _TheShelter.Scene
             map[iterationMapGrid].drawrect.SetFrame(1, 0, frameW * 2, frameH);
             map[iterationMapGrid].style = build_style.fastfood;
             map[iterationMapGrid].state = buildingState.canRead;
+            FixPosition(ref iterationMapGrid);
             return true;
         }
 
         private bool BUILD_MineCharbon(int iterationMapGrid)
         {
-            //-- canBuild? --
+            FixPosition(ref iterationMapGrid);
+            //-rappel- frameW = 80; frameH == 40;
+            map[iterationMapGrid].drawrect.textureID = 6;
+            map[iterationMapGrid].drawrect.SetFrame(2, 0, frameW, frameH);
+            map[iterationMapGrid].style = build_style.minedecharbon;
+            map[iterationMapGrid].state = buildingState.canRead;
+
+         /*   //-- canBuild? --
             int iteration_up = iterationMapGrid + 1;
             if (map[iteration_up].style != build_style.empty)
             {
@@ -890,6 +1017,7 @@ namespace _TheShelter.Scene
             map[iterationMapGrid].drawrect.SetFrame(2, 0, frameW * 2, frameH);
             map[iterationMapGrid].style = build_style.minedecharbon;
             map[iterationMapGrid].state = buildingState.canRead;
+            FixPosition(ref iterationMapGrid);*/
             return true;
         }
 
@@ -921,6 +1049,7 @@ namespace _TheShelter.Scene
             map[iterationMapGrid].drawrect.SetFrame(3, 0, frameW * 2, frameH);
             map[iterationMapGrid].style = build_style.labomagie;
             map[iterationMapGrid].state = buildingState.canRead;
+            FixPosition(ref iterationMapGrid);
             return true;
         }
 
@@ -953,6 +1082,7 @@ namespace _TheShelter.Scene
             map[iterationMapGrid].drawrect.SetFrame(4, 0, frameW * 2, frameH);
             map[iterationMapGrid].style = build_style.forge;
             map[iterationMapGrid].state = buildingState.canRead;
+            FixPosition(ref iterationMapGrid);
             return true;
         }
 
@@ -994,13 +1124,14 @@ namespace _TheShelter.Scene
 
             map[iterationMapGrid].drawrect.TripleSizePosition(tileW);
 
-            if (map[iterationMapGrid].columnInMap == 2 || map[iterationMapGrid].columnInMap==7)
+            if (map[iterationMapGrid].columnInMap == 2 || map[iterationMapGrid].columnInMap == 7)
             {
                 map[iterationMapGrid].drawrect.TripleSizePositionMerged(tileW);
             }
             map[iterationMapGrid].drawrect.SetFrame(0, 0, frameW * 3, frameH);
             map[iterationMapGrid].style = build_style.salledestockage;
             map[iterationMapGrid].state = buildingState.canRead;
+            FixPosition(ref iterationMapGrid);
             return true;
         }
 
@@ -1036,11 +1167,11 @@ namespace _TheShelter.Scene
                 {
                     map[iterationMapGrid].drawrect.frame = new Rectangle(80, 0, 80, 40);
                 }
-                
+
                 //-- déplacer à l'extérieur du refuge les actors
-             /*
-              *  feature à coder ++++++++++ tard :/
-              * */
+                /*
+                 *  feature à coder ++++++++++ tard :/
+                 * */
 
                 map[iterationMapGrid].actors.Clear();
 
@@ -1081,6 +1212,7 @@ namespace _TheShelter.Scene
 
         private bool CanBuildStairs_Tile(ref int iteration)
         {
+            //-- dessiner les escaliers dans la map
             if (map[iteration].style != build_style.empty) { return false; }
             int column = map[iteration].columnInMap;
             if (column != 1 && column != 4 && column != 9) return false;
@@ -1102,8 +1234,6 @@ namespace _TheShelter.Scene
             {
                 if (map[iteration - 1].style == build_style.empty) { return false; }
                 else { return true; }
-
-
             }
 
             if (column == 4)
@@ -1117,6 +1247,7 @@ namespace _TheShelter.Scene
 
         private bool CanBuildSize1_Tile(ref int iteration)
         {
+            //-- dessiner des tuiles 1 case
             int column = map[iteration].columnInMap;
             if (column == 1 && column == 4 && column == 9) return false;
 
@@ -1139,6 +1270,7 @@ namespace _TheShelter.Scene
 
         private bool CanBuildSize2_Tile(ref int iteration)
         {
+            //-- dessiner des tuiles 2cases
             int temp_up = iteration + 1;
             int temp_up_up = iteration + 1 + 1;
             int temp_down = iteration - 1;
@@ -1163,6 +1295,7 @@ namespace _TheShelter.Scene
 
         private bool CanBuildSize3_Tile(ref int iteration)
         {
+            //-- dessiner des tuiles 3 cases
             int temp_up = iteration + 1;
             int temp_up_up = iteration + 1 + 1;
             int temp_up_up_up = iteration + 1 + 1 + 1;
@@ -1201,12 +1334,12 @@ namespace _TheShelter.Scene
             //-- opérations bouton build
             if (btn_build.IsCollide(mouseposition))
             {
-                btn_build.drawrect.color = Color.Orange;
+                btn_build.drawrect.color = Color.Cyan;
                 detectsTile = false;
 
                 if (isclicked && mouseticks == 0)
                 {
-                    PlayAudio(audio[1],0.5f);
+                    PlayAudio(audio[1], 0.5f);
                     mouseticks++;
                     canShowPanelsCMD = !canShowPanelsCMD;
 
@@ -1235,30 +1368,33 @@ namespace _TheShelter.Scene
             //-- opérations bouton exploration
             if (btn_exploration.IsCollide(mouseposition))
             {
-                btn_exploration.drawrect.color = Color.Orange;
+                btn_exploration.drawrect.color = Color.Cyan;
                 detectsTile = false;
 
-                if (isclicked && currentDay>=1)
+                if (isclicked && currentDay >= 1 && mouseticks == 0)
                 {
                     mouseticks++;
 
+                    ///IsExploreMapOnScreen = !IsExploreMapOnScreen;
+
+                    ///fixExploreMap_Position = IsExploreMapOnScreen;
                     int rand = Randomizer.GiveRandomInt(0, 100);
 
-                    if(rand>80)
-                    {
-                        RefugeWrapper._fightmode = FightMode.monsterlvl1;
+                     if(rand>80)
+                     {
+                         RefugeWrapper._fightmode = FightMode.monsterlvl1;
 
-                    }
-                    else if (rand>40)                    
-                    {
-                    RefugeWrapper._fightmode = FightMode.monsterlvl2;
-                    }
-                    else
-                    {
-                        RefugeWrapper._fightmode = FightMode.monsterlvl3;
+                     }
+                     else if (rand>40)                    
+                     {
+                     RefugeWrapper._fightmode = FightMode.monsterlvl2;
+                     }
+                     else
+                     {
+                         RefugeWrapper._fightmode = FightMode.monsterlvl3;
 
-                    }
-                    main.ChangeScene(scene.standardFight);
+                     }
+                     main.ChangeScene(scene.standardFight);
                 }
             }
             else
@@ -1268,21 +1404,21 @@ namespace _TheShelter.Scene
         }
         private void IsNextTurnBtnClicked(ref Point mouseposition, ref bool isclicked, ref bool detectsTile)
         {
-            if(!isclicked)
+            if (!isclicked)
             {
                 mouseticks = 0;
             }
             //-- opérations bouton exploration
             if (btn_Next_Turn.IsCollide(mouseposition))
             {
-                btn_Next_Turn.drawrect.color = Color.Orange;
+                btn_Next_Turn.drawrect.color = Color.Cyan;
                 detectsTile = false;
 
-                if(isclicked && mouseticks==0)
+                if (isclicked && mouseticks == 0)
                 {
                     mouseticks++;
                     StartANewDay = true;
-                    PlayAudio(audio[0],0.5f);
+                    PlayAudio(audio[0], 0.5f);
                 }
             }
             else
@@ -1292,6 +1428,7 @@ namespace _TheShelter.Scene
         }
         private void IsQuitBtnClicked(ref Point mouseposition, ref bool isclicked, ref bool detectsTile)
         {
+            
             if (!isclicked)
             {
                 mouseticks = 0;
@@ -1302,7 +1439,7 @@ namespace _TheShelter.Scene
                 btn_Exit.drawrect.color = Color.Orange;
                 detectsTile = false;
 
-                if (isclicked)
+                if (isclicked && mouseticks == 0)
                 {
                     mouseticks++;
                     main.ChangeScene(scene.start);
@@ -1327,7 +1464,7 @@ namespace _TheShelter.Scene
                 btn_music.drawrect.color = Color.Orange;
                 detectsTile = false;
 
-                if (isclicked && mouseticks==0)
+                if (isclicked && mouseticks == 0)
                 {
                     mouseticks++;
                     PunchMusic();
@@ -1341,18 +1478,21 @@ namespace _TheShelter.Scene
         #endregion </Main buttons UX>
 
         #region <UX Behaviours>
-        private void ReadCameraInputs(ref KeyboardState kbs, ref MouseState mouseState)
+        private void ReadCameraInputs(ref KeyboardState kbs, ref bool isclicked, ref Point mouseposition)
         {
+            if (!isclicked) { mouseticks = 0; }
+
             int speed = 5;
-            if (mouseState.LeftButton == ButtonState.Pressed && mouseticks == 0)
+            if (isclicked && mouseticks == 0)
             {
                 frame_cursor = cursors[1];
                 canStampLayer = false;
-                Point delta = oldmouseposition - mouseState.Position;
+                Point delta = oldmouseposition - mouseposition;
                 mover = new Vector2(mover.X + (int)delta.X, mover.Y + (int)delta.Y);
                 mover *= speed;
                 cursorPos = maincamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
                 UIcursorPos = uicamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
+                cursor_explore = ennemycamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
                 return;
             }
             else
@@ -1360,6 +1500,7 @@ namespace _TheShelter.Scene
                 frame_cursor = cursors[0];
                 cursorPos = maincamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
                 UIcursorPos = uicamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
+                cursor_explore = ennemycamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
             }
             if (kbs.IsKeyDown(Keys.Left))
             {
@@ -1377,7 +1518,7 @@ namespace _TheShelter.Scene
             {
                 mover += new Vector2(0, speed);
             }
-        }   
+        }
 
         private void PlayAudioBuilding()
         {
@@ -1386,9 +1527,11 @@ namespace _TheShelter.Scene
             UpdatePopulationCounter();
         }
 
-        Action playBuildingSound; 
+        Action playBuildingSound;
         private void ReadTiles(ref Point mouseposition, ref bool isclicked)
         {
+            if (IsExploreMapOnScreen) { return; }
+
             if (bg_btn_main_commands.Contains(mouseposition)) return;
 
             if (map == null) return;
@@ -1399,7 +1542,7 @@ namespace _TheShelter.Scene
                 if (mouseticks != 0) mouseticks = 0;
             }
 
-            for (int i =map.Length-1  ; i>= (gridW = 5); i--)
+            for (int i = map.Length - 1; i >= (gridW = 5); i--)
             {
 
                 if (map[i].style == build_style.mergedTile)
@@ -1408,7 +1551,7 @@ namespace _TheShelter.Scene
                 }
                 else if (map[i].state != buildingState.ishidden)
                 {
-                    
+
                     map[i].drawrect.DEFAULT_COLOR = Color.White * 1.0f;
                 }
 
@@ -1417,11 +1560,11 @@ namespace _TheShelter.Scene
                     case false:
                         if (map[i].drawrect.textureID == 0) continue;
                         if (map[i].drawrect.frame.Y == 0 && map[i].drawrect.textureID == 3) continue;
-                    break;
+                        break;
                     case true:
                         int currentiteration = i;
-                        Color selectionColor = Color.DarkOrange;
-                        switch(doWork)
+                        Color selectionColor = Color.LightGreen;
+                        switch (doWork)
                         {
                             case ActionTile.buildDortoir:
 
@@ -1429,7 +1572,7 @@ namespace _TheShelter.Scene
                                     && map[i].IsCollide(mouseposition))
                                 {
                                     map[i].drawrect.color = selectionColor;
-                                    map[i+1].drawrect.color = selectionColor;
+                                    map[i + 1].drawrect.color = selectionColor;
 
 
                                     if (isclicked && mouseticks == 0)
@@ -1541,7 +1684,7 @@ namespace _TheShelter.Scene
                                 {
                                     map[i].drawrect.color = map[i].drawrect.DEFAULT_COLOR;
                                 }
-                                break; 
+                                break;
                             case ActionTile.buildmagie:
                                 if (CanBuildSize2_Tile(ref currentiteration)
                                    && map[i].IsCollide(mouseposition))
@@ -1641,7 +1784,7 @@ namespace _TheShelter.Scene
 
                                     if (isclicked && mouseticks == 0)
                                     {
-                                        mouseticks++; 
+                                        mouseticks++;
                                         canDoWork = false;
                                         if (KillBuilding(currentiteration))
                                         {
@@ -1654,18 +1797,16 @@ namespace _TheShelter.Scene
                                 {
                                     map[i].drawrect.color = map[i].drawrect.DEFAULT_COLOR;
                                 }
-
-                               
                                 break;
                         }
                         break;
                 }
-            
+
 
                 if (map[i].IsCollide(mouseposition)
                 && map[i].state != buildingState.nonAvailable)
                 {
-                  //  map[i].drawrect.color = Color.Orange;
+                    //  map[i].drawrect.color = Color.Orange;
                 }
                 else
                 {
@@ -1682,12 +1823,12 @@ namespace _TheShelter.Scene
             for (int i = 0; i < build_btn_panel.Length; i++)
             {
                 if (build_btn_panel[i] == null) continue;
-                if (build_btn_panel[i].state==buildingState.nonAvailable) continue;
+                if (build_btn_panel[i].state == buildingState.nonAvailable) continue;
 
-               
+
                 if (build_btn_panel[i].IsCollide(mouseposition))
                 {
-                    build_btn_panel[i].drawrect.color = Color.Orange;
+                    build_btn_panel[i].drawrect.color = Color.Cyan;
                     detectsTile = false;
                     buildingName = RefugeMainRules.GetName(i);
                     buildingPrice = "" + RefugeMainRules.GetPrice(i) + " V ";
@@ -1716,7 +1857,6 @@ namespace _TheShelter.Scene
                             }
                         }
 
-
                         if (doWork != ActionTile.empty)
                         {
                             canDoWork = true;
@@ -1725,22 +1865,18 @@ namespace _TheShelter.Scene
                 }
                 else
                 {
-
                     build_btn_panel[i].drawrect.color = build_btn_panel[i].drawrect.DEFAULT_COLOR;
                 }
             }
-
-
         }
 
         int dropTicks = 0;
 
         private void ReadCurrentTileDragged(ref Point mouseposition, ref bool isclicked)//, ref List<ActorRefuge> _ownerActors)
         {
-            if(!isclicked) 
-            { 
-               
-                dropTicks = 0; 
+            if (!isclicked)
+            {
+                dropTicks = 0;
             }
 
             for (int i = 0; i < map.Length; i++)
@@ -1757,10 +1893,9 @@ namespace _TheShelter.Scene
 
                 if (map[i].IsCollide(mouseposition))
                 {
-                    map[i].drawrect.color = Color.Red;
+                    map[i].drawrect.color = Color.LightGreen;
 
-
-                    if (!isclicked && map[i].CanAddActor(ref stampActorRefuge) && dropTicks==0)
+                    if (!isclicked && map[i].CanAddActor(ref stampActorRefuge) && dropTicks == 0)
                     {
                         //-- ajouter l'actor --
                         dropTicks++;
@@ -1775,57 +1910,53 @@ namespace _TheShelter.Scene
                 {
                     map[i].drawrect.color = map[i].drawrect.DEFAULT_COLOR;
                 }
-
-
             }
         }
         #endregion </UX Behaviours>
-      
+
         bool diseableDrop = false;
         bool coliderDetectionFocus = true;
-        int2 actorCollider_for_dragandrop_data = new int2(0,0);
+        int2 actorCollider_for_dragandrop_data = new int2(0, 0);
 
         bool ironMineIsOpen = false;
         bool mithrilMineIsOpen = false;
         bool AdamMineIsOpen = false;
 
         #region <Drag and drop actors>
-        private void DragActor(ref Point mouseposition, ref bool isclicked,ref List<ActorRefuge> actors, int map_iteration = -100)
+        private void DragActor(ref Point mouseposition, ref bool isclicked, ref List<ActorRefuge> actors, int map_iteration = -100)
         {
-            if(!isclicked)
+            if (!isclicked)
             {
-               if(dragdetected)
+                if (dragdetected)
                 {
                     //-- la copie est terminée
-                   // maincamera.RestoreZoom();
+                    // maincamera.RestoreZoom();
                     cursorPos = maincamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
                     UIcursorPos = maincamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
                     dragdetected = false;
                     coliderDetectionFocus = true;
-                    if(deleteDraggedActor)
+                    if (deleteDraggedActor)
                     {
                         PlayAudio(audio[4], 0.5f);
-                        actors.RemoveAll(x=>x.state==actorState.ishidden);
+                        actors.RemoveAll(x => x.state == actorState.ishidden);
                         deleteDraggedActor = false;
                     }
                     else
                     {
-                        actors.ForEach(x => x.state=actorState.isopen);
-
+                        actors.ForEach(x => x.state = actorState.isopen);
                     }
                 }
-                    mouseticks = 0;
+                mouseticks = 0;
             }
 
-            if(dragdetected) { return; }
+            if (dragdetected) { return; }
 
             for (int i = 0; i < actors.Count; i++)
             {
-               
                 if (actors[i].isCollide(ref mouseposition))
                 {
                     //-- oblige à ne sélectionner qu'un seul actor
-                    actors[i].color = Color.Red;
+                    actors[i].color = Color.Green;
                     map_iteraton_dragged = map_iteration;
 
                     if (isclicked && mouseticks == 0 && coliderDetectionFocus)
@@ -1841,17 +1972,15 @@ namespace _TheShelter.Scene
                         stampActorRefuge = new ActorRefuge(
                             new Rectangle(0, 0, 20, 30), temp.frame);
                     }
-                    
                 }
                 else
                 {
-
-                actors[i].color = Color.White;
+                    actors[i].color = Color.White;
                 }
-                
+
             }
-          
-        }    
+
+        }
         private void DragActorInsideBuildings(ref Point mousePosition, ref bool isclicked)
         {
             diseableDrop = false;
@@ -1869,12 +1998,8 @@ namespace _TheShelter.Scene
                         diseableDrop = true;
                         continue;
                     }
-
-                   
                 }
-              
             }
-
 
             for (int i = 0; i < map.Length; i++)
             {
@@ -1897,13 +2022,55 @@ namespace _TheShelter.Scene
 
         float chronoForceNextDay = 0;
         float chronoBankNewMoney = 0;
+
+        bool fixExploreMap_Position = false;
+
+
+        #region <Explore behaviours>
+
+        private void ReadMap(ref Point mouseposition, ref bool isclicked)
+        {
+            if(!isclicked)
+            {
+                Reset();
+            }
+            for (int i = 0; i < mapEmplacements_cities.Length; i++)
+            {
+                if (mapEmplacements_cities[i].IsCollide(cursor_explore))
+                {
+                    mapEmplacements_cities[i].drawrect.color = Color.Blue * 0.005f;
+                    
+                    if(i>0)
+                    {
+                        frame_cursor = cursors[2];
+                    }
+
+                    if(i==0 && mouseticks==0 && isclicked)
+                    {
+                        IsExploreMapOnScreen = false;
+                    }
+                    
+                }
+                else
+                {
+                    mapEmplacements_cities[i].drawrect.color = Color.Green * 0.01f;
+                }
+            }
+        }
+
+        private void Reset()
+        {
+            mouseticks = 0;
+        }
+        #endregion </Explore behaviours>
+
+
         public override void Update()
         {
-
-            if(displayNewBankAccount)
+            if (displayNewBankAccount)
             {
                 chronoBankNewMoney += 0.015f;
-                if(chronoBankNewMoney>2.0f)
+                if (chronoBankNewMoney > 2.0f)
                 {
                     chronoBankNewMoney = 0;
                     displayNewBankAccount = false;
@@ -1917,20 +2084,31 @@ namespace _TheShelter.Scene
             map[13].drawrect.color = Color.White;
             //-end-
 
-          
-
             //-- constantes
             if (maincamera == null) { return; }
             mover = Vector2.Zero;
             KeyboardState kbs = Keyboard.GetState();
             MouseState mouseState = Mouse.GetState();
             mouseposition = mouseState.Position;
+            var isclicked = mouseState.LeftButton == ButtonState.Pressed;
 
             //-- mettre à jour la position virtuelle du curseur
-            ReadCameraInputs(ref kbs, ref mouseState);
-            maincamera.MoveCamera(mover, true);
+            ReadCameraInputs(ref kbs, ref isclicked,ref mouseposition);
+            //-- switcher entre le mouvement de la caméra principale et le mouvement de map d'exploration
+            if (!IsExploreMapOnScreen)
+            {
+                maincamera.MoveCamera(mover, true);
+            }
+            else if (IsExploreMapOnScreen)
+            {
+                if(fixExploreMap_Position)
+                {
+                    fixExploreMap_Position = false;
+                    mover = new Vector2(0,1640);
+                }
+                ennemycamera.MoveCamera(mover,false,true);
+            }
 
-            var isclicked = mouseState.LeftButton == ButtonState.Pressed;
             canDetectTiles = true;
             //-end- constantes
 
@@ -1939,85 +2117,93 @@ namespace _TheShelter.Scene
                 StartDayFromWrapper();
             }
 
-
             if (StartANewDay)
             {
                 PlayNextDay();
                 return;
             }
 
-            UpdatePopulationCounter();
-            UpdatePriceVisual();
-
-            //-- ne sais pas pourquoi celà fonctionne UNIQUEMENT de cette manière :/
-            dragcursor = new Point(cursorPos.X, cursorPos.Y);
-
-            if (dragdetected && stampActorRefuge != null)
+            #region <lock hors exploration>
+            if(IsExploreMapOnScreen) //-- mode exploration allumé
             {
-                stampActorRefuge.position = new Rectangle(cursorPos.X, cursorPos.Y, 10, 15);
+                if(mapEmplacements_cities!=null)
+                {
+                    ReadMap(ref mouseposition,ref isclicked);
+                }
             }
-            //-end- ne sais pas pourquoi celà fonctionne UNIQUEMENT de cette manière :/
-        
-            if (dragdetected)
+            else if (!IsExploreMapOnScreen) //-- mode exploration éteint
             {
-               // cursorPos = maincamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
-                //-- déposer un actor
-                ReadCurrentTileDragged(ref cursorPos, ref isclicked);
+                //-- mettre à jour information population et argent
+                UpdatePopulationCounter();
+                UpdatePriceVisual();
+
+                //-- ne sais pas pourquoi celà fonctionne UNIQUEMENT de cette manière :/
+                dragcursor = new Point(cursorPos.X, cursorPos.Y);
+
+                if (dragdetected && stampActorRefuge != null)
+                {
+                    stampActorRefuge.position = new Rectangle(cursorPos.X, cursorPos.Y, 10, 15);
+                }
+                //-end- ne sais pas pourquoi celà fonctionne UNIQUEMENT de cette manière :/
+
+                if (dragdetected)
+                {
+                    // cursorPos = maincamera.ScreenToWorld(mouseposition.ToVector2()).ToPoint();
+                    //-- déposer un actor
+                    ReadCurrentTileDragged(ref cursorPos, ref isclicked);
+                }
+
+                //-- animer les actors
+                UpdateActors();
+
+                //-- commandes page de jeu
+                IsExploreBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
+                IsNextTurnBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
+                IsQuitBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
+                IsBuildBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
+                IsMusicBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
+
+                //-- commandes si bouton principal cliqué
+                ReadBuilderPanel_cmd_btn(ref UIcursorPos, ref isclicked, ref canDetectTiles);
+
+                //-- attrapper un actor
+                if (map != null)
+                {
+                    DragActorInsideBuildings(ref cursorPos, ref isclicked);
+                }
+
+                if (canDetectTiles
+                    && !canShowPanelsCMD
+                    && state_playerIsBuildingTile == 0)
+                {
+                    ReadTiles(ref cursorPos, ref isclicked);
+
+                }
+
+                if (bg_btn_main_commands.Contains(UIcursorPos)) { canDetectTiles = false; }
+
+                if (canShowPanelsCMD && alpha_maincamera > 0.02f)
+                {
+                    alpha_maincamera -= 0.015f;
+                    if (alpha_maincamera <= 0.2f) { alpha_maincamera = 0.2f; }
+
+                }
+                else if (alpha_maincamera != 1.0f)
+                {
+                    alpha_maincamera += 0.015f;
+                    if (alpha_maincamera >= 1) { alpha_maincamera = 1.0f; }
+
+                }
+
+                chronoForceNextDay += 0.0015f;
+
+                if (chronoForceNextDay >= 8)
+                {
+                    chronoForceNextDay = 0;
+                    StartANewDay = true;
+                }
             }
-
-            UpdateActors();
-
-            //-- commandes page de jeu
-            IsExploreBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
-            IsNextTurnBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
-            IsQuitBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
-            IsBuildBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
-            IsMusicBtnClicked(ref UIcursorPos, ref isclicked, ref canDetectTiles);
-
-            //-- commandes si bouton principal cliqué
-            ReadBuilderPanel_cmd_btn(ref UIcursorPos, ref isclicked, ref canDetectTiles);
-
-
-            //-- attrapper un actor
-            if (map != null)
-            {
-                DragActorInsideBuildings(ref cursorPos, ref isclicked);
-            }
-
-
-            if (bg_btn_main_commands.Contains(UIcursorPos)) { canDetectTiles = false; }
-
-            if (canShowPanelsCMD && alpha_maincamera > 0.02f)
-            {
-                alpha_maincamera -= 0.015f;
-                if (alpha_maincamera <= 0.2f) { alpha_maincamera = 0.2f; }
-
-            }
-            else if (alpha_maincamera != 1.0f)
-            {
-                alpha_maincamera += 0.015f;
-                if (alpha_maincamera >= 1) { alpha_maincamera = 1.0f; }
-
-            }
-
-            if (canDetectTiles 
-                && !canShowPanelsCMD
-                && state_playerIsBuildingTile==0)
-            {
-                ReadTiles(ref cursorPos, ref isclicked);
-
-            }
-
-
-
-            chronoForceNextDay += 0.0015f;
-
-            if(chronoForceNextDay>=8)
-            {
-                chronoForceNextDay = 0;
-                StartANewDay = true;
-            }
-
+            #endregion </lock hors exploration>
 
             old_kbs = kbs;
 
@@ -2027,11 +2213,6 @@ namespace _TheShelter.Scene
         }
 
         #region <StackFlow Behaviours>
-
-        string buildingPrice = string.Empty;
-        string buildingName = string.Empty;
-
-      
         private void UpdateBankAcount(ActionTile _dowork)
         {
             int value = 0;
@@ -2067,7 +2248,6 @@ namespace _TheShelter.Scene
                 return false;
             }
         }
-
         private void UpdatePriceVisual()
         {
             if (alphaPrice_remover >= 0)
@@ -2080,9 +2260,6 @@ namespace _TheShelter.Scene
                 }
             }
         }
-
-        int actorCounter = 0;
-        
         private void UpdateActors()
         {
             actorCounter = 0;
@@ -2102,13 +2279,10 @@ namespace _TheShelter.Scene
             }
 
             //-- mettre à jour le nombre d'habitants
-            if(totalpopulation!=actorCounter) { totalpopulation = actorCounter; }
+            if (totalpopulation != actorCounter) { totalpopulation = actorCounter; }
         }
 
-        int nextdaystate = 0;
-        float chrononextday = 0.0f;
-        bool StartANewDay = false;
-        bool startdayfromwrapper = false;
+       
         private void StartDayFromWrapper()
         {
             switch (nextdaystate)
@@ -2183,15 +2357,14 @@ namespace _TheShelter.Scene
             }
         }
 
-
         private void PlayNextDay()
         {
-            switch(nextdaystate)
+            switch (nextdaystate)
             {
                 case 0:
                     alpha_maincamera -= 0.015f;
                     alphadays -= 0.015f;
-                    if(alpha_maincamera <= 0) 
+                    if (alpha_maincamera <= 0)
                     {
                         RefugeWrapper.SaveDataInWrapper(ref map);
                         nextdaystate = 1;
@@ -2199,7 +2372,7 @@ namespace _TheShelter.Scene
                         alpha_maincamera = 0;
 
 
-                        while(true)
+                        while (true)
                         {
                             daysVisual[0].color = Color.White * 0.2f;
                             daysVisual[1].color = Color.White * 0.2f;
@@ -2207,7 +2380,7 @@ namespace _TheShelter.Scene
                             daysVisual[3].color = Color.White * 0.2f;
                             daysVisual[4].color = Color.White * 0.2f;
                             daysVisual[5].color = Color.White * 0.2f;
-                            daysVisual[6].color = Color.White * 0.2f;  
+                            daysVisual[6].color = Color.White * 0.2f;
                             break;
                         }
                     }
@@ -2217,7 +2390,7 @@ namespace _TheShelter.Scene
                     break;
                 case 1:
                     chrononextday += 0.04f;
-                    if(chrononextday>=1)
+                    if (chrononextday >= 1)
                     {
                         chrononextday = 0;
                         nextdaystate = 2;
@@ -2230,37 +2403,37 @@ namespace _TheShelter.Scene
 
                         //-- transfert données au wrapper
 
-                        
+
                         data.totalbuilddortoir = totalbuilddortoir;
                         data.totalbuildfasfood = totalbuildfasfood;
                         data.totalbuildminecharbon = totalbuildminecharbon;
                         data.totalbuildmagic = totalbuildmagic;
                         data.totalbuildforge = totalbuildforge;
-                        data.totalbuildfiltreeau= totalbuildfiltreeau;
+                        data.totalbuildfiltreeau = totalbuildfiltreeau;
                         data.totalbuildbiere = totalbuildbiere;
                         data.totalbuildstockage = totalbuildstockage;
-                        data.totaleau=totaleau;
-                        data.totalpain= totalpain;
-                        data.totalpopulation= totalpopulation;
-                        data.totalenergie= totalenergie;
-                        data.bank=bank;
-                        data.currentDay= currentDay;
-                        data.daysVisual=daysVisual;
+                        data.totaleau = totaleau;
+                        data.totalpain = totalpain;
+                        data.totalpopulation = totalpopulation;
+                        data.totalenergie = totalenergie;
+                        data.bank = bank;
+                        data.currentDay = currentDay;
+                        data.daysVisual = daysVisual;
                         RefugeWrapper.SaveDataRefuge(ref data);
 
                         maxpopulation = totalbuilddortoir * 4;
 
                         int temp = currentDay;
                         temp++;
-                        if(temp>=7)
+                        if (temp >= 7)
                         {
                             PlayAudio(audio[1], 0.5f);
 
-                            if(data.totalpopulation<maxpopulation)
+                            if (data.totalpopulation < maxpopulation)
                             {
                                 Add_Friend_ActorRefuge(2);
                             }
-                            
+
                             temp = 0;
                         }
                         currentDay = temp;
@@ -2274,7 +2447,7 @@ namespace _TheShelter.Scene
                 case 2:
                     alpha_maincamera += 0.15f;
                     alphadays += 0.15f;
-                    if (alpha_maincamera >=1.0f)
+                    if (alpha_maincamera >= 1.0f)
                     {
                         nextdaystate = 0;
                         alphadays = 1.0f;
@@ -2284,12 +2457,11 @@ namespace _TheShelter.Scene
                     break;
             }
         }
-
         private void UpdateBuilderPanelButtons()
         {
             for (int i = 0; i < 8; i++)
             {
-                if(RefugeMainRules.FreeBuildings(i,maxpopulation))
+                if (RefugeMainRules.FreeBuildings(i, maxpopulation))
                 {
                     build_btn_panel[i].drawrect.DEFAULT_COLOR = Color.White;
                 }
@@ -2300,7 +2472,6 @@ namespace _TheShelter.Scene
                 }
             }
         }
-
         private void GetWaterCount()
         {
             int maxEau = totalbuildfiltreeau * 10;
@@ -2318,13 +2489,13 @@ namespace _TheShelter.Scene
                         {
 
                             map[i].actors.ForEach(x => x.state = actorState.iswater);
-                            waterCount += map[i].actors.Count* multiplicateur;
+                            waterCount += map[i].actors.Count * multiplicateur;
                         }
                     }
                 }
             }
 
-            if(totaleau < maxEau)
+            if (totaleau < maxEau)
             {
                 totaleau += waterCount;
             }
@@ -2333,7 +2504,6 @@ namespace _TheShelter.Scene
                 totaleau = 0;
             }
         }
-
         private void GetFoodCount()
         {
             int maxFood = totalbuildfasfood * 10;
@@ -2351,7 +2521,7 @@ namespace _TheShelter.Scene
                         {
 
                             map[i].actors.ForEach(x => x.state = actorState.iswater);
-                            counter += map[i].actors.Count *multiplicateur;
+                            counter += map[i].actors.Count * multiplicateur;
                         }
                     }
                 }
@@ -2367,7 +2537,6 @@ namespace _TheShelter.Scene
             }
 
         }
-
         private void GetEnergyCount()
         {
             int maxEnergy = totalbuildminecharbon * 10;
@@ -2401,12 +2570,9 @@ namespace _TheShelter.Scene
             }
 
         }
-        int maxpopulation;
         private void UpdatePopulationCounter()
         {
             maxpopulation = totalbuilddortoir * 4;
-
-
 
             actorCounter = 0;
             if (map != null)
@@ -2415,12 +2581,12 @@ namespace _TheShelter.Scene
                 {
                     if (map[i].actors.Count > 0)
                     {
-                        foreach(ActorRefuge actor in map[i].actors)
+                        foreach (ActorRefuge actor in map[i].actors)
                         {
-                            if(actor.state!=actorState.ishidden)
+                            if (actor.state != actorState.ishidden)
                             {
-                               
-                                if(actorCounter>maxpopulation)
+
+                                if (actorCounter > maxpopulation)
                                 {
                                     actor.state = actorState.ishidden;
                                 }
@@ -2428,62 +2594,53 @@ namespace _TheShelter.Scene
                                 {
 
                                 }
-                                
+
                             }
                         }
                     }
                 }
             }
 
-         
+
 
             //-- mettre à jour le nombre d'habitants
             totalpopulation = actorCounter;
 
         }
-
         private void FeedActors()
         {
             totalpain -= (totalpopulation);
             totaleau -= (totalpopulation);
 
-            int totalbuildings = totalbuilddortoir + totalbuildminecharbon+
-            totalbuildbiere*4+totalbuildfasfood+ totalbuildmagic*2+
-            totalbuildforge+ totalbuildfiltreeau+ totalbuildstockage*2;
+            int totalbuildings = totalbuilddortoir + totalbuildminecharbon +
+            totalbuildbiere * 4 + totalbuildfasfood + totalbuildmagic * 2 +
+            totalbuildforge + totalbuildfiltreeau + totalbuildstockage * 2;
 
             totalenergie -= totalbuildings;
         }
-
-
         private void KillActors()
         {
             for (int i = 0; i < map.Length; i++)
             {
                 if (map[i].actors.Count > 0)
                 {
-                    map[i].actors.RemoveAll(x=>x.state == actorState.ishidden);
-                    map[i].actors.RemoveAll(x=>x.state == actorState.toremove);
+                    map[i].actors.RemoveAll(x => x.state == actorState.ishidden);
+                    map[i].actors.RemoveAll(x => x.state == actorState.toremove);
                 }
             }
         }
-
-        int totalbuilddortoir = 1, totalbuildminecharbon,
-            totalbuildbiere, totalbuildfasfood, totalbuildmagic,
-            totalbuildforge, totalbuildfiltreeau, totalbuildstockage;
-
-
         private void UpdateStatsBuildings()
         {
-            int totaldortoir_counter=0, totalminecharbon_counter = 0,
-           totalbiere_counter=0, totalfasfood_counter=0, totalmagic_counter=0,
-           totalforge_counter=0, totalfiltreeau_counter=0, totalstockage_counter=0;
+            int totaldortoir_counter = 0, totalminecharbon_counter = 0,
+           totalbiere_counter = 0, totalfasfood_counter = 0, totalmagic_counter = 0,
+           totalforge_counter = 0, totalfiltreeau_counter = 0, totalstockage_counter = 0;
 
 
             if (map != null)
             {
                 for (int i = 0; i < map.Length; i++)
                 {
-                    switch(map[i].style)
+                    switch (map[i].style)
                     {
                         case build_style.dortoir: totaldortoir_counter++; break;
                         case build_style.fastfood: totalfasfood_counter++; break;
@@ -2504,7 +2661,7 @@ namespace _TheShelter.Scene
             totalbuildmagic = totalmagic_counter;
             totalbuildforge = totalforge_counter;
             totalbuildfiltreeau = totalfiltreeau_counter;
-            totalbuildbiere  = totalbiere_counter;
+            totalbuildbiere = totalbiere_counter;
             totalbuildstockage = totalstockage_counter;
         }
 
@@ -2512,6 +2669,7 @@ namespace _TheShelter.Scene
 
         public override void Draw(ref SpriteBatch _sp)
         {
+            if (IsExploreMapOnScreen) return;
             //-- dessiner les tuiles de la map
             for (int i = 0; i < map.Length; i++)
             {
@@ -2533,31 +2691,31 @@ namespace _TheShelter.Scene
                     for (int j = 0; j < map[i].actors.Count; j++)
                     {
                         if (map[i].actors[j].state != actorState.ishidden)
-                        _sp.Draw(textures[9], map[i].actors[j].position,
-                            map[i].actors[j].frame,
-                            map[i].actors[j].color * alpha_maincamera,
-                            0.0f, map[i].actors[j].origin,
-                            map[i].actors[j].spriteEffect,
-                            0.1f);
+                            _sp.Draw(textures[9], map[i].actors[j].position,
+                                map[i].actors[j].frame,
+                                map[i].actors[j].color * alpha_maincamera,
+                                0.0f, map[i].actors[j].origin,
+                                map[i].actors[j].spriteEffect,
+                                0.1f);
                     }
                 }
             }
-            
+
             Rectangle posSoldat = new Rectangle(40, 25, 10, 15);
             Rectangle frameSoldat = new Rectangle(0, 0, 20, 30);
 
-            if(actor_friends.Count > 0)
+            if (actor_friends.Count > 0)
             {
                 float actorfriends_layerdepth = 0.9f;
-                foreach(ActorRefuge actor in  actor_friends)
+                foreach (ActorRefuge actor in actor_friends)
                 {
-                    if(actor.state != actorState.ishidden)
-                    _sp.Draw(textures[9], actor.position, actor.frame, actor.color,
-                        0,actor.origin, actor.spriteEffect, actorfriends_layerdepth);
+                    if (actor.state != actorState.ishidden)
+                        _sp.Draw(textures[9], actor.position, actor.frame, actor.color,
+                            0, actor.origin, actor.spriteEffect, actorfriends_layerdepth);
                 }
             }
 
-            if(dragdetected && stampActorRefuge!=null)
+            if (dragdetected && stampActorRefuge != null)
             {
                 _sp.Draw(textures[9], stampActorRefuge.position, stampActorRefuge.frame, stampActorRefuge.color,
                        0, Vector2.Zero, stampActorRefuge.spriteEffect, 0.1f);
@@ -2565,11 +2723,22 @@ namespace _TheShelter.Scene
 
             base.Draw(ref _sp);
         }
-
-        float alphadays = 0.0f;
         public override void Draw_UI(ref SpriteBatch _spUI)
         {
-            if(dragdetected) { return; }
+            if(IsExploreMapOnScreen)
+            {
+                if (cursor == null) return;
+                Rectangle mousecursorPositionj = new Rectangle(UIcursorPos.X, UIcursorPos.Y, 20, 20);
+                _spUI.Draw(cursor, mousecursorPositionj, frame_cursor, Color.White,
+                    0, Vector2.Zero, SpriteEffects.None, 0.9f);
+
+                if (mapEmplacements_cities!=null)
+                {
+
+                }
+            }
+
+            if (dragdetected || IsExploreMapOnScreen) { return; }
             if (textures == null) return;
 
             //-- boutons de commande
@@ -2584,15 +2753,15 @@ namespace _TheShelter.Scene
                 , 0, Vector2.Zero, SpriteEffects.None, 0.6f); ;
 
             _spUI.Draw(textures[4], btn_Next_Turn.drawrect.position,
-                btn_Next_Turn.drawrect.frame, btn_Next_Turn.drawrect.color, 
+                btn_Next_Turn.drawrect.frame, btn_Next_Turn.drawrect.color,
                 0, Vector2.Zero, SpriteEffects.None, 0.2f);
 
             if (daysVisual != null)
             {
                 for (int i = 0; i < daysVisual.Length; i++)
                 {
-                    _spUI.Draw(textures[10], daysVisual[i].position, 
-                        daysVisual[i].frame, daysVisual[i].color*alphadays
+                    _spUI.Draw(textures[10], daysVisual[i].position,
+                        daysVisual[i].frame, daysVisual[i].color * alphadays
                , 0, Vector2.Zero, SpriteEffects.None, 0.4f); ;
                 }
             }
@@ -2613,21 +2782,21 @@ namespace _TheShelter.Scene
 
             //-- informations
             float stringLayerdepth = 0.5f;
-            _spUI.DrawString(cutsceneFont, totalpopulation.ToString(), infospositions[0], 
+            _spUI.DrawString(cutsceneFont, totalpopulation.ToString(), infospositions[0],
                 Color.Black,
                0, Vector2.Zero, 1.0f, SpriteEffects.None, stringLayerdepth);
-            _spUI.DrawString(cutsceneFont, totalpain.ToString(), infospositions[1], 
+            _spUI.DrawString(cutsceneFont, totalpain.ToString(), infospositions[1],
                 Color.Black,
                0, Vector2.Zero, 1.0f, SpriteEffects.None, stringLayerdepth);
-            _spUI.DrawString(cutsceneFont, totaleau.ToString(), infospositions[2], 
+            _spUI.DrawString(cutsceneFont, totaleau.ToString(), infospositions[2],
                 Color.Black,
                0, Vector2.Zero, 1.0f, SpriteEffects.None, stringLayerdepth);
-            _spUI.DrawString(cutsceneFont, totalenergie.ToString(), infospositions[3], 
+            _spUI.DrawString(cutsceneFont, totalenergie.ToString(), infospositions[3],
                 Color.Black,
                0, Vector2.Zero, 1.0f, SpriteEffects.None, stringLayerdepth);
 
             _spUI.Draw(textures[4], btn_music.drawrect.position,
-                btn_music.drawrect.frame, btn_music.drawrect.color, 
+                btn_music.drawrect.frame, btn_music.drawrect.color,
                 0, Vector2.Zero, SpriteEffects.None, 0.2f);
 
             if (displayNewBankAccount)
@@ -2637,25 +2806,56 @@ namespace _TheShelter.Scene
                  0, Vector2.Zero, 1.0f, SpriteEffects.None, 0.1f);
             }
 
-            if (mouseticks>0) return;
+            
+
+            if (mouseticks > 0) return;
             if (cursor == null) return;
             Rectangle mousecursorPosition = new Rectangle(UIcursorPos.X, UIcursorPos.Y, 20, 20);
             _spUI.Draw(cursor, mousecursorPosition, frame_cursor, Color.White);
 
 
 
-            _spUI.DrawString(cutsceneFont, ""+map[0].drawrect.position.X + " : " + map[0].drawrect.position.Y, Vector2.Zero,
-              Color.White,
-             0, Vector2.Zero, 1.0f, SpriteEffects.None, stringLayerdepth);
-
+            /* _spUI.DrawString(cutsceneFont, ""+map[0].drawrect.position.X + " : " + map[0].drawrect.position.Y, Vector2.Zero,
+               Color.White,
+              0, Vector2.Zero, 1.0f, SpriteEffects.None, stringLayerdepth);
+            */
 
             base.Draw_UI(ref _spUI);
         }
+        public override void Draw_Ennemy(ref SpriteBatch _spUI)
+        {
+            if (!IsExploreMapOnScreen) return;
 
-        float alpha_maincamera = 1.0f;
+            //-- afficher la carte
+            _spUI.Draw(textures[11], ToOffset(new Rectangle(0, 0, 320, 240)),new Rectangle(0,0,640,480), Color.White,
+                0, Vector2.Zero, SpriteEffects.None, 0.8f);
 
+
+            if (mapEmplacements_cities != null)
+            {
+                for (int i = 0; i < mapEmplacements_cities.Length; i++)
+                {
+                    _spUI.Draw(statusTex,
+                  mapEmplacements_cities[i].drawrect.position,
+                  mapEmplacements_cities[i].drawrect.frame,
+                  mapEmplacements_cities[i].drawrect.color
+                  , 0.0f, Vector2.Zero, SpriteEffects.None, 0.5f);
+                }
+           
+
+
+            _spUI.DrawString(cutsceneFont, "" +
+                mapEmplacements_cities[0].drawrect.position.X + " : " 
+                + mapEmplacements_cities[0].drawrect.position.Y, 
+                new Vector2(cursor_explore.X, cursor_explore.Y),
+               Color.White,
+              0, Vector2.Zero, 1.0f, SpriteEffects.None, 0.2f);
+ }
+            base.Draw_Ennemy(ref _spUI);
+        }
         public override void Draw_Friend(ref SpriteBatch _spUI)
         {
+            if (IsExploreMapOnScreen) return;
             /*
              *  Exclusivement dédié pour la page de construction, d'exploration 
              *  , de fin de tour et de fin de partie
@@ -2663,8 +2863,8 @@ namespace _TheShelter.Scene
 
             //-- compte en banque
 
-            _spUI.Draw(statusTex, bankPosition, new Rectangle(0,0,16,16),Color.Black,
-                0.0f,Vector2.Zero,SpriteEffects.None,0.9f);
+            _spUI.Draw(statusTex, bankPosition, new Rectangle(0, 0, 16, 16), Color.Black,
+                0.0f, Vector2.Zero, SpriteEffects.None, 0.9f);
 
 
             _spUI.Draw(textures[4], bankIconPosition, new Rectangle(24 * 4, 0, 24, 24),
@@ -2672,15 +2872,17 @@ namespace _TheShelter.Scene
                 0.0f, Vector2.Zero, SpriteEffects.None, 0.3f);
             _spUI.DrawString(cutsceneFont, " : " + bank.ToString(),
                ToOffset(new Vector2(18, 7)), Color.Yellow * 4.0f,
-               0,Vector2.Zero,1.0f,SpriteEffects.None,0.5f);
+               0, Vector2.Zero, 1.0f, SpriteEffects.None, 0.5f);
 
             _spUI.DrawString(cutsceneFont, hitBank_remover,
             ToOffset(new Vector2(30, 2)), Color.Red * alphaPrice_remover,
                0, Vector2.Zero, 1.0f, SpriteEffects.None, 0.4f);
 
 
-           
+
             //--
+
+
 
 
             if (!canShowPanelsCMD)
@@ -2703,10 +2905,10 @@ namespace _TheShelter.Scene
                     0, Vector2.Zero, SpriteEffects.None, 0.3f);
             }
 
-            _spUI.DrawString(cutsceneFont, buildingName,ToOffset(new Vector2(80, 8)),
+            _spUI.DrawString(cutsceneFont, buildingName, ToOffset(new Vector2(80, 8)),
                 Color.White,
-                0,Vector2.Zero, 1.0f, SpriteEffects.None, 0.1f);
-            _spUI.DrawString(cutsceneFont, buildingPrice , ToOffset(new Vector2(124, 50)),
+                0, Vector2.Zero, 1.0f, SpriteEffects.None, 0.1f);
+            _spUI.DrawString(cutsceneFont, buildingPrice, ToOffset(new Vector2(124, 50)),
                Color.Yellow,
                0, Vector2.Zero, 1.0f, SpriteEffects.None, 0.1f);
 

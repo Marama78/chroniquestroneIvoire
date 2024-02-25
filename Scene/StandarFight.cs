@@ -1,4 +1,4 @@
-﻿using _TheShelter.GameWrapping;
+﻿using CTI_RPG.GameWrapping;
 using DinguEngine;
 using DinguEngine.Camera;
 using Microsoft.Xna.Framework;
@@ -11,9 +11,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TheShelter;
+using CTI_RPG;
 
-namespace _TheShelter.Scene
+namespace CTI_RPG.Scene
 {
     public class StandarFight : ModelScene
     {
@@ -35,6 +35,7 @@ namespace _TheShelter.Scene
                 actorType.soldier,
                 actorType.archer,
                 actorType.mage,
+                actorType.priest,
             };
 
             switch (RefugeWrapper._fightmode)
@@ -47,10 +48,7 @@ namespace _TheShelter.Scene
                         actorType.wolf,
                          actorType.wolf,
                         actorType.zombie,
-                        actorType.wolf,
-                         actorType.wolf,
-                        actorType.zombie,
-                        actorType.wolf,
+                      
                     };
                     TE_Manager.bank_bonus = 50;
                     break;
@@ -61,8 +59,7 @@ namespace _TheShelter.Scene
                         actorType.zombie,
                         actorType.zombie,
                          actorType.zombie,
-                        actorType.zombie,
-                        actorType.zombie,
+                       
                     };
                     TE_Manager.bank_bonus = 150;
 
@@ -76,16 +73,14 @@ namespace _TheShelter.Scene
                         actorType.slim,
                           actorType.slim,
                         actorType.zombie,
-                        actorType.slim,
-                          actorType.slim,
-                        actorType.zombie,
-                        actorType.slim,
+                       
                     };
                     TE_Manager.bank_bonus = 200;
                     break;
 
             }
-
+           
+            TE_Manager.bank_bonus = 50;
 
             TE_Manager.friends.Clear();
             TE_Manager.friends = friends;
@@ -112,14 +107,15 @@ namespace _TheShelter.Scene
         int end = 80;
         float alphaAll = 1.0f;
 
-      
+       
         public override void Update()
         {
 
+            ///
+            main.ChangeScene(scene.combatmode);
+            ///
 
-
-
-            if(changescene)
+            if (changescene)
             {
                 chronochange += 0.015f;
                 if (chronochange > 2.0f)

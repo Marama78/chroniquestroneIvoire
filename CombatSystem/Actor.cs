@@ -1,55 +1,137 @@
-﻿using _TheShelter.Scene;
-using DinguEngine;
+﻿using DinguEngine;
 using DinguEngine.Shared;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Diagnostics;
 
-namespace _TheShelter.CombatSystem
+namespace CTI_RPG.CombatSystem
 {
+    public enum ATTAXK_SFX
+    {
+        sword,
+        fire,
+        thunder,
+        stone,
+
+    }
+
+    public enum ATTACK_TYPE
+    {
+        reduceHP,
+        reduceSPEED,
+        reduceFORCE,
+        reduceDEFENSE,
+        drainHP,
+        SLEEP,
+        POISON,
+        PARALYSIE,
+        FIRE,
+        SHADOW,
+
+    }
+
+    public struct ATTACK
+    {
+        public string Name;
+        public int damage;
+        public ATTACK_TYPE type;
+        public int crit_probability;
+        public int precision;
+
+        public ATTACK(string name, int damage, ATTACK_TYPE type, int crit_probability, int precision)
+        {
+            Name = name;
+            this.damage = damage;
+            this.type = type;
+            this.crit_probability = crit_probability;
+            this.precision = precision;
+        }
+    }
+
     public class Actor
     {
-        public Actor(actorType _type, int _texture)
+        public int poisoned, paralysed, sleeping, onFire, shadowed;
+
+        public int Force = 1;
+        public int Defense =1;
+        public int Speed = 1;
+        public ATTACK[] Attack;
+        public int level = 1;
+        public int HP = 1;
+        public int MAX_HP = 1;
+
+        public double currentXP = 0;
+        public int id = 0;
+        public int2 frameposition;
+        public int2 frameSize;
+        public Actor(actorType _type, int _texture, int2 _framePosition, int2 _frameSize, int _portraitID = 0, int level = 0)
         {
             textureID = _texture;
             type = _type;
-            frame = new Rectangle(0, 0, 75, 95);
+            this.frameposition = _framePosition;
+            this.frameSize = _frameSize;
 
-            name = ActorsStatesRules.Get_Name(_type);
-            MAXlife = GetLifeMAXBar();
-            MAXmagic = GetMagicMaxBAR();
-            life = MAXlife;
-            
+            frame = new Rectangle(_framePosition.x * _frameSize.x, _framePosition.y * _frameSize.y, _frameSize.x, _frameSize.y);
+            name = ActorCombat_MainRules.Get_Name(_type);
+
+         
             magic = MAXmagic;
+            textur2D_portraitID = _portraitID;
+            attaqueNames = ActorCombat_MainRules.GetAtkNames(ref _type);
+            repliques = ActorCombat_MainRules.GetRepliques(ref _type);
+
+            UpdateLevel(level, _type);
+
+            Attack = ActorCombat_MainRules.GET_ATTACK_VALUES(_type);
         }
 
-        public Actor(actorType _type, int _texture, int2 framePosition, int2 frameSize)
+        public void UpdateLevel(int level, actorType _type)
         {
-            textureID = _texture;
-            type = _type;
-
-            frame = new Rectangle(framePosition.x * frameSize.x, framePosition.y * frameSize.y, frameSize.x, frameSize.y);
-            name = ActorsStatesRules.Get_Name(_type);
-
-            MAXlife = GetLifeMAXBar();
-            MAXmagic = GetMagicMaxBAR();
-            life = MAXlife;
-            magic = MAXmagic;
+            MAX_HP = ActorCombat_MainRules.GetHP(_type, level);
+            HP = ActorCombat_MainRules.GetHP(_type, level);
+            Defense = ActorCombat_MainRules.GetDEF(_type, level);
+            Speed = ActorCombat_MainRules.GetSPEED(_type, level);
+            Force = ActorCombat_MainRules.GetFORCE(_type, level);
         }
+
+        public void UpdateLevel(int _level)
+        {
+            this.level = _level;
+            MAX_HP = ActorCombat_MainRules.GetHP(type, _level);
+            HP = ActorCombat_MainRules.GetHP(type, _level);
+            Defense = ActorCombat_MainRules.GetDEF(type, _level);
+            Speed = ActorCombat_MainRules.GetSPEED(type, _level);
+            Force = ActorCombat_MainRules.GetFORCE(type, _level);
+        }
+
+        public int actionPoint = 1;
+
+
+        public string GetSomeWords()
+        {
+            return "Ma lame purgera votre infamie!";
+        }
+
+
+        public string[] attaqueNames;
+        public string[] repliques;
+
+
+        public int textur2D_portraitID;
+
         public actorType type;
         public Texture2D texture;
         public Rectangle frame;
 
         public int textureID;
         public string name;
-        public int life;
+      
         public int magic;
 
         public int MAXlife;
         public int MAXmagic;
 
-        public int defense;
-        public int level;
+       
+     
         public int exp;
 
         public int atak_pts;
@@ -77,18 +159,18 @@ namespace _TheShelter.CombatSystem
         public int GetLifeMAXBar()
         {
             level = UpdateLevel();
-            return ActorsStatesRules.Get_LIFE_BAR(type, level);
+            return ActorCombat_MainRules.Get_LIFE_BAR(type, level);
         }
 
         public int GetMagicMaxBAR()
         {
             level = UpdateLevel();
-            return ActorsStatesRules.Get_LIFE_BAR(type, level);
+            return ActorCombat_MainRules.Get_LIFE_BAR(type, level);
         }
 
         public void Hitted(ref int hit)
         {
-            this.life -= hit;
+            this.HP -= hit;
         }
 
         public actorType GetActorTYpe()

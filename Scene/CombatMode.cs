@@ -1,4 +1,4 @@
-﻿using _TheShelter.CombatSystem;
+﻿using CTI_RPG.CombatSystem;
 using DinguEngine;
 using DinguEngine.Camera;
 using DinguEngine.Shared;
@@ -13,9 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using TheShelter;
+using CTI_RPG;
 
-namespace _TheShelter.Scene
+namespace CTI_RPG.Scene
 {
     public enum SFX_style
     {
@@ -123,8 +123,8 @@ namespace _TheShelter.Scene
         {
           
 
-            actors_ennemies.RemoveAll(x => x.life <= 0);
-            actors_friends.RemoveAll(x => x.life <= 0);
+            actors_ennemies.RemoveAll(x => x.HP <= 0);
+            actors_friends.RemoveAll(x => x.HP <= 0);
 
             #region <is fight over?>
             if (actors_ennemies.Count <= 0)
@@ -194,6 +194,7 @@ namespace _TheShelter.Scene
 
             cursor = _content.Load<Texture2D>("system\\cursor");
             SFX = _content.Load<Texture2D>("units\\battle\\fxatk");
+            statusTex = _content.Load<Texture2D>("statusBar");
         }
         private void LoadMusics(ref ContentManager _content)
         {
@@ -230,11 +231,11 @@ namespace _TheShelter.Scene
 
             picker_actors_friends = new Actor[5]
             {
-                 new Actor(actorType.princess, 1, new int2(0, 0), myunitFramesize),
-             new Actor(actorType.soldier, 1, new int2(1, 0), myunitFramesize),
-                new Actor(actorType.archer, 1, new int2(2, 0), myunitFramesize),
-             new Actor(actorType.mage, 1, new int2(3, 0), myunitFramesize),
-             new Actor(actorType.priest, 1, new int2(4, 0), myunitFramesize),
+                 new Actor(actorType.princess, 1, new int2(0, 0), myunitFramesize,0),
+             new Actor(actorType.soldier, 1, new int2(1, 0), myunitFramesize,1),
+                new Actor(actorType.archer, 1, new int2(2, 0), myunitFramesize, 2),
+             new Actor(actorType.mage, 1, new int2(3, 0), myunitFramesize, 3),
+             new Actor(actorType.priest, 1, new int2(4, 0), myunitFramesize, 4),
         };
 
             picker_actors_ennemies = new Actor[]
@@ -343,32 +344,8 @@ namespace _TheShelter.Scene
             };
         }
 
-        float chronoLoader = 0;
-        Song[] endingSongs;
-        public override void Load(ref ContentManager _content)
+        private void SetupLifeAllLifeBarPosition()
         {
-            frame_cursor = new Rectangle(0, 0, 16, 16);
-            maincamera = new TE_Camera( );
-            uicamera = new TE_Camera( );
-            friendcamera = new TE_Camera( );
-            ennemycamera = new TE_Camera( );
-
-            // maincamera.MoveCamera(new Vector2(800, 400));
-            LoadTextures(ref _content);
-            LoadMusics(ref _content);
-            MediaPlayer.Play(bgmusic);
-            LoadSounds(ref _content);
-            LoadSound_Combat(ref _content);
-
-            SetBattlers();
-            SetActionPanel();
-
-           
-
-
-            statusTex = _content.Load<Texture2D>("statusBar");
-
-
             playerLifeBar = ToOffset(new Rectangle(87, 125, 54, 11));
             playerMagicBar = ToOffset(new Rectangle(87, 138, 54, 11));
             playerLifeBar_BG = ToOffset(new Rectangle(87, 125, 54, 11));
@@ -380,27 +357,47 @@ namespace _TheShelter.Scene
             ennemiLifeBar_BG = ToOffset(new Rectangle(202, 14, 35, 11));
             ennemiMagicBar_BG = ToOffset(new Rectangle(202, 27, 35, 11));
 
-            /* playerCard = ToOffset(new Rectangle(7, 53, 75, 95));
-             ennemiCard = ToOffset(new Rectangle(148, 12, 48, 64));*/
+        }
 
-             playerCard = ToOffset(new Rectangle(7, 16, 112, 144));
+        private void SetupUI()
+        {
+            playerCard = ToOffset(new Rectangle(7, 16, 112, 144));
             ennemiCard = ToOffset(new Rectangle(148, 12, 48, 64));
 
             backgroundPosition = ToOffset(new Rectangle(0, 0, 240, 160));
             playerNamePosition = ToOffset(new Vector2(8, 37));
             enemiNamePosition = ToOffset(new Vector2(68, 13));
 
-            bg_commands_position_vect2 = ToOffset(new Rectangle(148, 89, 84, 60));
+          //  bg_commands_position_vect2 = ToOffset(new Rectangle(148, 89, 84, 60));
+            backgroundPosition = ToOffset(new Rectangle(0, 0, 240, 160));
 
             ennemiAction = ToOffset(new Rectangle(109, 29, 24, 24));
+        }
+
+        float chronoLoader = 0;
+        Song[] endingSongs;
+        public override void Load(ref ContentManager _content)
+        {
+            frame_cursor = new Rectangle(0, 0, 16, 16);
+            maincamera = new TE_Camera( );
+            uicamera = new TE_Camera( );
+            friendcamera = new TE_Camera( );
+            ennemycamera = new TE_Camera( );
+
+            LoadTextures(ref _content);
+            LoadMusics(ref _content);
+            MediaPlayer.Play(bgmusic);
+            LoadSounds(ref _content);
+            LoadSound_Combat(ref _content);
+
+            //-- installation des composants visuels --
+            SetBattlers();
+            SetActionPanel();
+            SetupLifeAllLifeBarPosition();
+            SetupUI();
+            //-end-
+           
             sfxCard = ennemiCard;
-
-
-           
-           
-
-
-          
 
 
             base.Load(ref _content);
@@ -411,7 +408,7 @@ namespace _TheShelter.Scene
         #region <Get Status Informations>
         public void Get_ENNEMY_LifeBar()
         {
-            int life = actors_ennemies[currentEnnemyListID].life;
+            int life = actors_ennemies[currentEnnemyListID].HP;
             int width = 35;
             int height = 11;
             float result;
@@ -443,7 +440,7 @@ namespace _TheShelter.Scene
         }
         public void Get_Friend_LifeBar()
         {
-            int life = actors_friends[currentFriendListID].life;
+            int life = actors_friends[currentFriendListID].HP;
             int height = 11;
             float result;
             int maxlife = actors_friends[currentFriendListID].GetLifeMAXBar();
@@ -1003,7 +1000,7 @@ namespace _TheShelter.Scene
                         break;
                     }
 
-                    else if (actors_friends[temp].life > 0)
+                    else if (actors_friends[temp].HP > 0)
                     {
                         break;
                     }
@@ -1122,7 +1119,7 @@ namespace _TheShelter.Scene
         int hitterShowState = 0;
         private void Attack_Action(ref int wantedAction, bool isEnnemy = false)
         {
-
+            return;
             //-- play sound --
             switch (wantedAction)
             {
@@ -1198,13 +1195,13 @@ namespace _TheShelter.Scene
                 if (!isEnnemy)
                 {
                     actor_caster = actors_friends[currentFriendListID].GetActorTYpe();
-                    cost_castMagic = ActorsStatesRules.Get_MAGIC_cost(actor_caster);
+                    cost_castMagic = ActorCombat_MainRules.Get_MAGIC_cost(actor_caster);
                     qty_totalMagic = actors_friends[currentFriendListID].magic;
                 }
                 else
                 {
                     actor_caster = actors_ennemies[currentEnnemyListID].GetActorTYpe();
-                    cost_castMagic = ActorsStatesRules.Get_MAGIC_cost(actor_caster);
+                    cost_castMagic = ActorCombat_MainRules.Get_MAGIC_cost(actor_caster);
                     qty_totalMagic = actors_ennemies[currentEnnemyListID].magic;
                 }
 
@@ -1221,13 +1218,13 @@ namespace _TheShelter.Scene
                 if (!isEnnemy)
                 {
                     actors_friends[currentFriendListID].magic = result;
-                     hitPts = ActorsStatesRules.GetAtk_MAGIC_degats(spellCast);
+                     hitPts = ActorCombat_MainRules.GetAtk_MAGIC_degats(spellCast);
                     actors_ennemies[currentEnnemyListID].Hitted(ref hitPts);
                 }
                 else
                 {
                     actors_ennemies[currentEnnemyListID].magic = result;
-                     hitPts = ActorsStatesRules.GetAtk_MAGIC_degats(spellCast);
+                     hitPts = ActorCombat_MainRules.GetAtk_MAGIC_degats(spellCast);
                     actors_friends[currentFriendListID].Hitted(ref hitPts);
                 }
             }
@@ -1236,13 +1233,13 @@ namespace _TheShelter.Scene
                 if (!isEnnemy)
                 {
                     actorType at = actors_friends[currentFriendListID].GetActorTYpe();
-                     hitPts = ActorsStatesRules.GetAtk_melee_degats(at);
+                     hitPts = ActorCombat_MainRules.GetAtk_melee_degats(at);
                     actors_ennemies[currentEnnemyListID].Hitted(ref hitPts);
                }
                 else
                 {
                     actorType at = actors_ennemies[currentEnnemyListID].GetActorTYpe();
-                     hitPts = ActorsStatesRules.GetAtk_melee_degats(at);
+                     hitPts = ActorCombat_MainRules.GetAtk_melee_degats(at);
                     actors_friends[currentFriendListID].Hitted(ref hitPts);
                 }
             }
@@ -1251,13 +1248,13 @@ namespace _TheShelter.Scene
                 if (!isEnnemy)
                 {
                     actorType at = actors_friends[currentFriendListID].type;
-                     hitPts = ActorsStatesRules.GetAtk_melee_degats(at);
+                     hitPts = ActorCombat_MainRules.GetAtk_melee_degats(at);
                     actors_ennemies[currentEnnemyListID].Hitted(ref hitPts);
                 }
                 else
                 {
                     actorType at = actors_ennemies[currentEnnemyListID].type;
-                     hitPts = ActorsStatesRules.GetAtk_melee_degats(at);
+                     hitPts = ActorCombat_MainRules.GetAtk_melee_degats(at);
                     actors_friends[currentFriendListID].Hitted(ref hitPts);
                 }
             }
@@ -1277,11 +1274,11 @@ namespace _TheShelter.Scene
 
 
 
-            if (actors_friends[currentFriendListID].life<=0)
+            if (actors_friends[currentFriendListID].HP<=0)
             {
                 CleanAllActors();
             }
-            if (actors_ennemies[currentEnnemyListID].life <= 0)
+            if (actors_ennemies[currentEnnemyListID].HP <= 0)
             {
                 CleanAllActors();
             }
@@ -1307,7 +1304,7 @@ namespace _TheShelter.Scene
             {
                 if (actors_friends.Count > 0)
                 {
-                    _sp.DrawString(cutsceneFont, ActorsStatesRules.Get_Name(actors_friends[currentFriendListID].GetActorTYpe()), playerNamePosition, Color.White * alphaALL);
+                    _sp.DrawString(cutsceneFont, ActorCombat_MainRules.Get_Name(actors_friends[currentFriendListID].GetActorTYpe()), playerNamePosition, Color.White * alphaALL);
                 }
                 _sp.Draw(statusTex, playerLifeBar_BG, Color.DarkGray * alphaALL);
                 _sp.Draw(statusTex, playerMagicBar_BG, Color.DarkGray * alphaALL);
@@ -1317,7 +1314,7 @@ namespace _TheShelter.Scene
             {
                 if (actors_ennemies.Count > 0)
                 {
-                    _sp.DrawString(cutsceneFont, ActorsStatesRules.Get_Name(actors_ennemies[currentEnnemyListID].GetActorTYpe()), enemiNamePosition, Color.White * alphaALL);
+                    _sp.DrawString(cutsceneFont, ActorCombat_MainRules.Get_Name(actors_ennemies[currentEnnemyListID].GetActorTYpe()), enemiNamePosition, Color.White * alphaALL);
 
                 }
                 _sp.Draw(statusTex, ennemiLifeBar_BG, Color.DarkGray * alphaALL);

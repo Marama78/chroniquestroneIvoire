@@ -10,7 +10,7 @@ using System;
 using System.IO;
 using System.Linq;
 
-namespace TheShelter
+namespace CTI_RPG
 {
     public enum scene
     {
@@ -67,8 +67,8 @@ namespace TheShelter
             Content.RootDirectory = "Content";
             _content = Content;
             // IsMouseVisible = true;
-            _graphics.PreferredBackBufferWidth =  960;// 720;// 480;// 240;
-            _graphics.PreferredBackBufferHeight =  640;// 480;// 320;// 160;
+            _graphics.PreferredBackBufferWidth =   720;// 480;// 240;
+            _graphics.PreferredBackBufferHeight =   480;// 320;// 160;
             _graphics.ApplyChanges();
           
         }
@@ -86,7 +86,6 @@ namespace TheShelter
             IsMouseVisible = false;
 
             Window.Title = "Les chroniques du trône d'Ivoire";
-            Window.AllowUserResizing = true;
             base.Initialize();
         }
 
@@ -155,26 +154,28 @@ namespace TheShelter
 
             if (Keyboard.GetState().IsKeyDown(Keys.F1))
             {
-                SetResolution(1200, 800);
                 _graphics.IsFullScreen = false;
+                SetResolution(1200, 800);
                 UpdateCameras(240, 160);
+                
             }
             if (Keyboard.GetState().IsKeyDown(Keys.F2))
             {
-                SetResolution(960, 640);
                 _graphics.IsFullScreen = false;
+                SetResolution(960, 640);
                 UpdateCameras(240, 160);
             }
             if (Keyboard.GetState().IsKeyDown(Keys.F3))
             {
-                SetResolution(720, 480);
                 _graphics.IsFullScreen = false;
+                SetResolution(720, 480);
                 UpdateCameras(240, 160);
             }
             if (Keyboard.GetState().IsKeyDown(Keys.F4))
             {
-               
 
+                SetResolution(720, 480);
+                UpdateCameras(240, 160);
                 fullscreen = !fullscreen;
                 _graphics.IsFullScreen = fullscreen;
                 _graphics.ApplyChanges();
